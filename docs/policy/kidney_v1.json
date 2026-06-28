@@ -1,0 +1,185 @@
+{
+  "attributes": {
+    "hla_match": {
+      "bucket": "candidate_biology",
+      "rating": {
+        "floor_points": 0,
+        "input": "hla_mismatches",
+        "max_points": 100,
+        "per_mismatch": 16,
+        "type": "linear_descending"
+      },
+      "weight": 15
+    },
+    "longevity_epts": {
+      "bucket": "post_transplant_survival",
+      "rating": {
+        "floor_points": 0,
+        "input": "epts_score",
+        "max_points": 100,
+        "per_mismatch": 1,
+        "type": "linear_descending"
+      },
+      "weight": 0
+    },
+    "medical_urgency": {
+      "bucket": "medical_urgency",
+      "rating": {
+        "input": "urgent",
+        "points_if_false": 0,
+        "points_if_true": 100,
+        "type": "boolean_bonus"
+      },
+      "weight": 0
+    },
+    "pediatric": {
+      "bucket": "patient_access",
+      "rating": {
+        "input": "age_years",
+        "lt": 18,
+        "points_if_false": 0,
+        "points_if_true": 100,
+        "type": "threshold_bonus"
+      },
+      "weight": 15
+    },
+    "prior_living_donor": {
+      "bucket": "patient_access",
+      "rating": {
+        "input": "prior_living_donor",
+        "points_if_false": 0,
+        "points_if_true": 100,
+        "type": "boolean_bonus"
+      },
+      "weight": 15
+    },
+    "proximity": {
+      "bucket": "placement_efficiency",
+      "rating": {
+        "default": 0,
+        "input": "distance_band",
+        "map": {
+          "0": 100,
+          "1": 50,
+          "2": 0
+        },
+        "type": "map"
+      },
+      "weight": 5
+    },
+    "sensitization_cpra": {
+      "bucket": "candidate_biology",
+      "rating": {
+        "input": "cpra",
+        "steps": [
+          {
+            "at": 0,
+            "points": 0
+          },
+          {
+            "at": 20,
+            "points": 10
+          },
+          {
+            "at": 50,
+            "points": 25
+          },
+          {
+            "at": 80,
+            "points": 50
+          },
+          {
+            "at": 95,
+            "points": 75
+          },
+          {
+            "at": 98,
+            "points": 90
+          },
+          {
+            "at": 99,
+            "points": 95
+          },
+          {
+            "at": 100,
+            "points": 100
+          }
+        ],
+        "type": "step"
+      },
+      "weight": 20
+    },
+    "waiting_time": {
+      "bucket": "patient_access",
+      "rating": {
+        "den": 73,
+        "input": "waiting_days",
+        "max_points": 100,
+        "num": 2,
+        "type": "linear_clamped"
+      },
+      "weight": 30
+    }
+  },
+  "canonicalization": "canon-v1",
+  "gates": {
+    "abo": {
+      "A": [
+        "A",
+        "AB"
+      ],
+      "AB": [
+        "AB"
+      ],
+      "B": [
+        "B",
+        "AB"
+      ],
+      "O": [
+        "O",
+        "A",
+        "B",
+        "AB"
+      ]
+    },
+    "sanity": {
+      "max_age_years": 90,
+      "min_age_years": 0
+    },
+    "virtual_crossmatch": {
+      "enabled": true
+    }
+  },
+  "output": {
+    "explanation_granularity": "per_bucket",
+    "include_explanation": true
+  },
+  "region_zones": {
+    "AP": "S",
+    "AS": "NE",
+    "BR": "E",
+    "DL": "N",
+    "GJ": "W",
+    "KA": "S",
+    "KL": "S",
+    "MH": "W",
+    "MP": "C",
+    "OD": "E",
+    "PB": "N",
+    "RJ": "W",
+    "TN": "S",
+    "UP": "N",
+    "WB": "E"
+  },
+  "tie_break": [
+    {
+      "by": "waiting_days",
+      "direction": "desc"
+    },
+    {
+      "by": "keccak_seed",
+      "direction": "asc"
+    }
+  ],
+  "version": "kidney_v1"
+}

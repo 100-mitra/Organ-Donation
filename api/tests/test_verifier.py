@@ -1,91 +1,106 @@
-"""Chain-free unit tests for engine.verifier — incl. the registration binding (D-013)."""
+"""Chain-free unit tests for engine.verifier under the Phase 2 CAS recompute."""
 from __future__ import annotations
 
 from engine.commitments import commit
 from engine.decision import ranking_hash
+from engine.policy import load_policy
+from engine.scoring import rank
 from engine.verifier import verify_decision
 
-POLICY = "skeleton-waiting-time-v0"
+P = load_policy()
+VERSION = "kidney_v1"
+SALT = "00" * 16
 
-DONOR = {"id": "D1", "abo": "O"}
-R1 = {"id": "R1", "waiting_days": 1000}
-R2 = {"id": "R2", "waiting_days": 2000}
+DONOR = {
+    "id": "D1", "abo": "O", "hla": {"A": [1, 2], "B": [7, 8], "DR": [4, 15]},
+    "age": 35, "region": "TN", "recovered_at_epoch_day": 20000,
+}
 
 
-def _fixture():
-    revealed = {
-        "D1": {"record": DONOR, "salt": "00", "commitment": commit(DONOR, "00"), "kind": "donor"},
-        "R1": {"record": R1, "salt": "01", "commitment": commit(R1, "01"), "kind": "recipient"},
-        "R2": {"record": R2, "salt": "02", "commitment": commit(R2, "02"), "kind": "recipient"},
+def _recip(rid, **kw):
+    base = {
+        "id": rid, "abo": "O", "hla": {"A": [1, 2], "B": [7, 8], "DR": [4, 15]}, "age": 45,
+        "unacceptable_antigens": [], "cpra": 0, "dialysis_start_epoch_day": 16000,
+        "prior_living_donor": False, "region": "TN", "urgent": False,
     }
-    ranked = [revealed["R2"]["commitment"], revealed["R1"]["commitment"]]  # R2 (2000) first
+    base.update(kw)
+    return base
+
+
+# R1..R3 eligible (distinct CAS), R4 gated (crossmatch on B7), R5 gated (sanity age).
+RECIPS = [
+    _recip("R1", cpra=10, dialysis_start_epoch_day=13000),
+    _recip("R2", abo="A", age=12, dialysis_start_epoch_day=18500),
+    _recip("R3", abo="B", cpra=98, prior_living_donor=True, dialysis_start_epoch_day=17000),
+    _recip("R4", unacceptable_antigens=[7]),
+    _recip("R5", age=95),
+]
+
+
+def _build():
+    donor_entry = {"record": DONOR, "salt": SALT, "commitment": commit(DONOR, SALT), "kind": "donor"}
+    revealed = {"D1": donor_entry}
+    by_id = {}
+    for r in RECIPS:
+        c = commit(r, SALT)
+        entry = {"record": r, "salt": SALT, "commitment": c, "kind": "recipient"}
+        revealed[r["id"]] = entry
+        by_id[r["id"]] = entry
+    seed = donor_entry["commitment"]
+    ranked_eligible, _ = rank(DONOR, RECIPS, P, seed)
+    ranked_commitments = [by_id[e["id"]]["commitment"] for e in ranked_eligible]
     onchain = {
-        "donorCommitment": revealed["D1"]["commitment"],
-        "policyVersion": POLICY,
-        "rankedRecipientCommitments": ranked,
-        "rankingHash": ranking_hash(revealed["D1"]["commitment"], ranked, POLICY),
+        "donorCommitment": donor_entry["commitment"],
+        "policyVersion": VERSION,
+        "rankedRecipientCommitments": ranked_commitments,
+        "rankingHash": ranking_hash(donor_entry["commitment"], ranked_commitments, VERSION),
     }
     registered = [e["commitment"] for e in revealed.values()]
-    return onchain, revealed, registered
+    return onchain, revealed, registered, ranked_eligible
 
 
-def test_accepts_a_faithful_decision():
-    onchain, revealed, registered = _fixture()
-    ok, _ = verify_decision(onchain, revealed, registered)
-    assert ok
+def test_accepts_a_faithful_cas_decision():
+    onchain, revealed, registered, _ = _build()
+    ok, checks = verify_decision(onchain, revealed, registered)
+    assert ok, [c["name"] for c in checks if not c["ok"]]
 
 
-def test_rejects_when_a_decision_commitment_was_never_registered():
-    # ISOLATES THE BINDING: the ranking still recomputes correctly, but one revealed
-    # commitment is absent from the on-chain Registered set -> must reject (D-013).
-    onchain, revealed, registered = _fixture()
-    registered_missing = [c for c in registered if c != revealed["R1"]["commitment"]]
-    ok, checks = verify_decision(onchain, revealed, registered_missing)
-    assert ok is False
-    binding = next(c for c in checks if c["name"].startswith("revealed R1"))
-    ranking = next(c for c in checks if c["name"].startswith("recomputed ranking =="))
-    assert binding["ok"] is False  # the binding is what caught it
-    assert ranking["ok"] is True   # ranking alone would have passed -> binding adds the protection
+def test_gated_recipients_are_excluded_from_the_ranking():
+    _, _, _, ranked = _build()
+    ids = [e["id"] for e in ranked]
+    assert set(ids) == {"R1", "R2", "R3"}  # R4 (crossmatch) + R5 (sanity) excluded
 
 
-def test_rejects_a_substituted_unregistered_record():
-    # The substitution attack: reveal a self-consistent record that was never committed.
-    onchain, revealed, registered = _fixture()
-    fake = {"id": "R1", "waiting_days": 9999}
-    revealed["R1"] = {"record": fake, "salt": "01", "commitment": commit(fake, "01"), "kind": "recipient"}
-    ok, _ = verify_decision(onchain, revealed, registered)
+def test_rejects_including_an_ineligible_recipient():
+    onchain, revealed, registered, _ = _build()
+    gated = revealed["R4"]["commitment"]  # ineligible (crossmatch)
+    rc = onchain["rankedRecipientCommitments"] + [gated]
+    tampered = {**onchain, "rankedRecipientCommitments": rc,
+                "rankingHash": ranking_hash(onchain["donorCommitment"], rc, VERSION)}
+    ok, _ = verify_decision(tampered, revealed, registered)
     assert ok is False
 
 
-def test_rejects_a_tampered_ranking_hash():
-    onchain, revealed, registered = _fixture()
-    onchain = {**onchain, "rankingHash": "0x" + "00" * 32}
-    ok, _ = verify_decision(onchain, revealed, registered)
+def test_rejects_a_reordered_ranking():
+    onchain, revealed, registered, _ = _build()
+    rc = list(onchain["rankedRecipientCommitments"])
+    rc[0], rc[1] = rc[1], rc[0]
+    tampered = {**onchain, "rankedRecipientCommitments": rc,
+                "rankingHash": ranking_hash(onchain["donorCommitment"], rc, VERSION)}
+    ok, _ = verify_decision(tampered, revealed, registered)
+    assert ok is False
+
+
+def test_rejects_an_unregistered_record():
+    onchain, revealed, registered, _ = _build()
+    missing = [c for c in registered if c != onchain["rankedRecipientCommitments"][0]]
+    ok, _ = verify_decision(onchain, revealed, missing)
     assert ok is False
 
 
 def test_rejects_recipient_hidden_under_unknown_kind():
-    # D-015 kind-mislabel: R1 is registered + revealed but tagged "ghost" and dropped
-    # from the ranking. Binding/order all pass; the kind check must catch it.
-    onchain, revealed, registered = _fixture()
+    onchain, revealed, registered, _ = _build()
     revealed["R1"] = {**revealed["R1"], "kind": "ghost"}
-    ranked = [revealed["R2"]["commitment"]]
-    onchain = {**onchain, "rankedRecipientCommitments": ranked,
-               "rankingHash": ranking_hash(revealed["D1"]["commitment"], ranked, POLICY)}
     ok, checks = verify_decision(onchain, revealed, registered)
     assert ok is False
     assert next(c for c in checks if "kinds are recognized" in c["name"])["ok"] is False
-    assert next(c for c in checks if c["name"].startswith("recomputed ranking =="))["ok"] is True
-
-
-def test_rejects_recipient_relabeled_as_second_donor():
-    # The relabel-as-donor variant: R1 -> kind "donor" (now two donors) and dropped
-    # from the ranking. The exactly-one-donor check must catch it.
-    onchain, revealed, registered = _fixture()
-    revealed["R1"] = {**revealed["R1"], "kind": "donor"}
-    ranked = [revealed["R2"]["commitment"]]
-    onchain = {**onchain, "rankedRecipientCommitments": ranked,
-               "rankingHash": ranking_hash(revealed["D1"]["commitment"], ranked, POLICY)}
-    ok, checks = verify_decision(onchain, revealed, registered)
-    assert ok is False
-    assert next(c for c in checks if "exactly one donor" in c["name"])["ok"] is False

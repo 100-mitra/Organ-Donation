@@ -21,10 +21,11 @@ from pydantic import BaseModel
 from api.chain import Chain
 from api.store import OffChainStore
 from engine.decision import build_decision
-from engine.scoring import POLICY_VERSION, rank_recipients
-from engine.skeleton_fixtures import DONOR, RECIPIENTS
+from engine.demo_pool import DONOR, RECIPIENTS
+from engine.policy import load_policy
+from engine.scoring import POLICY_VERSION, rank
 
-app = FastAPI(title="Organ Donation — Audit API (Phase 1 skeleton)")
+app = FastAPI(title="Organ Donation — Audit API (Phase 2 CAS engine)")
 
 # Local dev only: the Vite web app calls this from another origin.
 app.add_middleware(
@@ -97,7 +98,11 @@ def seed() -> dict:
 
 @app.post("/match")
 def match() -> dict:
-    """Rank the registered recipients (trivial policy) and log the decision."""
+    """Rank with the full CAS (gates + integer scoring + tie-breaks) and log it.
+
+    The ranked list is the ELIGIBLE recipients in CAS order; `explanations` carries
+    every candidate's gates + per-attribute point breakdown (incl. the ineligible).
+    """
     recips = store.recipients()
     if not recips:
         raise HTTPException(400, "no recipients registered — POST /seed first")
@@ -105,19 +110,18 @@ def match() -> dict:
     if donor is None:
         raise HTTPException(400, "donor not registered — POST /seed first")
 
-    ranked_records = rank_recipients([e["record"] for e in recips])
+    policy = load_policy(POLICY_VERSION)
+    decision_seed = donor["commitment"]  # tie-break seed = the donor commitment
     by_id = {e["record"]["id"]: e for e in recips}
-    ranked_ids = [r["id"] for r in ranked_records]
+    ranked_eligible, evaluated = rank(
+        donor["record"], [e["record"] for e in recips], policy, decision_seed
+    )
+    ranked_ids = [e["id"] for e in ranked_eligible]
     ranked_commitments = [by_id[rid]["commitment"] for rid in ranked_ids]
 
-    decision = build_decision(
-        donor["commitment"], ranked_commitments, POLICY_VERSION
-    )
+    decision = build_decision(donor["commitment"], ranked_commitments, POLICY_VERSION)
     logged = chain().log_decision(
-        donor["commitment"],
-        ranked_commitments,
-        decision["ranking_hash"],
-        POLICY_VERSION,
+        donor["commitment"], ranked_commitments, decision["ranking_hash"], POLICY_VERSION
     )
     return {
         "decisionId": logged["decisionId"],
@@ -127,6 +131,7 @@ def match() -> dict:
         "rankedRecipientIds": ranked_ids,
         "rankedRecipientCommitments": ranked_commitments,
         "rankingHash": decision["ranking_hash"],
+        "explanations": evaluated,
     }
 
 

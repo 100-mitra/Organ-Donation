@@ -6,6 +6,26 @@
 
 ---
 
+## D-017 · 2026-06-28 · accepted — Phase 2 CAS: derived inputs, tie-break seed, policy-as-JSON, eligible-coverage
+**Context.** Replacing the trivial ranking with the full integer CAS forced several determinism choices
+that the verifier (Python + JS) must reproduce identically. **Decisions.**
+1. **waiting_days is derived, not stored:** `waiting_days = donor.recovered_at_epoch_day −
+   recipient.dialysis_start_epoch_day` (clamped ≥0). Both values live in the committed records, so the
+   verifier needs **no external "as-of" date and no contract change** — a registration-time `waiting_days`
+   snapshot would be wrong (waiting accrues) and an external as-of would need logging.
+2. **Tie-break seed = `keccak256(donor_commitment ‖ recipient_id)`.** The policy's `keccak_seed` tie-break
+   needs a decision id known to the verifier; the donor commitment is on-chain and unique per match, so it
+   is the seed. Reuses canon-v1 keccak (already in both languages).
+3. **Policy ships as derived JSON.** `kidney_v1.yaml` stays the human source; `scripts/gen_policy_json.py`
+   derives `kidney_v1.json`, which **both** the Python engine and the JS verifier load, so they interpret
+   byte-identical rules. `test_policy.py` asserts JSON==YAML. Added `region_zones` to the policy (proximity
+   needs it; anything affecting the score must be in the versioned config). No version bump — kidney_v1 was
+   never logged on-chain (Phase 1 used `skeleton-waiting-time-v0`), so this completes v1 rather than changing it.
+4. **Gates change coverage:** the ranked set is the **eligible** recipients only, so the verifier's coverage
+   check becomes "ranked set == eligible(revealed recipients)" (recompute eligibility, not all-revealed).
+**Consequence.** The CAS ranking is fully recomputable from the committed records + policy, by an
+independent reimplementation, with integer-only arithmetic. JS parity is enforced by frozen CAS vectors (next).
+
 ## D-015 · 2026-06-28 · partially resolved — kind-mislabel FIXED; subset-drop deferred to Phase 3
 **Context.** Re-running the adversarial workflow on the D-013 fix confirmed the binding closes the
 *fabrication/substitution* attack (a revealed record never Registered is rejected — proven by N2), but
