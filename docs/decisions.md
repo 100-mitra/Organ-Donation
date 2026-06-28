@@ -6,6 +6,18 @@
 
 ---
 
+## D-013 · 2026-06-28 · open — Phase 1 verifier does not yet bind /reveal to on-chain registrations
+**Context.** An adversarial review of the green Phase 1 loop confirmed a soundness gap: the verifier
+recomputes from whatever `/reveal` returns and never cross-checks it against the on-chain `Registered`
+commitments, so a dishonest allocator could reveal a different pool than it committed and still PASS
+(plus sibling cases: dropped candidate, omitted recipient, duplicate ids). **Decision (provisional).**
+Phase 1 ships at its DoD with this documented as a KNOWN LIMITATION; whether to harden now (read
+`Registered` events + set-equality/permutation/uniqueness checks — no contract change) or carry it into
+Phase 3 ("real audit ledger + privacy") is a maintainer call. **Consequence.** The Phase 1 verifiability
+demo is honest only for the *cooperative* path; the strong "verify the allocation was faithful" claim
+should not be made until this binding exists. Full write-up + recommended fix in
+[`MORNING_REPORT.md`](MORNING_REPORT.md). Status stays **open** until the maintainer decides.
+
 ## D-012 · 2026-06-28 · accepted — Hardhat node holds the allocator key in the skeleton
 **Context.** Writes are role-gated to the `allocator`. **Decision.** In Phase 1 the local Hardhat
 node manages account 0 and signs; the API sends `transact({"from": allocator})` with no local key
