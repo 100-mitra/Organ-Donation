@@ -6,6 +6,40 @@
 
 ---
 
+## D-012 · 2026-06-28 · accepted — Hardhat node holds the allocator key in the skeleton
+**Context.** Writes are role-gated to the `allocator`. **Decision.** In Phase 1 the local Hardhat
+node manages account 0 and signs; the API sends `transact({"from": allocator})` with no local key
+custody. **Consequence.** Keeps the skeleton minimal. A real key-custody / rotation / compromise
+story (even simulated) is deferred to the threat model + [`LATER.md`](LATER.md) (critique #8); the
+integrity model's dependence on this key is acknowledged, not yet hardened.
+
+## D-011 · 2026-06-28 · accepted — JS keccak via js-sha3; canon-v1 agreement confirmed on first try
+**Context.** Verifiability needs a *second* implementation that reproduces the engine's commitments.
+**Decision.** The browser uses `js-sha3`'s `keccak256` (Ethereum variant) and a canon-v1 port
+(`web/src/canon.js`). Its vitest reads the SAME frozen vectors as pytest. **Consequence.** Python and
+JS reproduced every vector byte-for-byte on the first run — no spec change needed. Standing rule
+holds: if they ever diverge, fix the canon-v1 spec, not one language ([[d-004]]).
+
+## D-010 · 2026-06-28 · accepted — Off-chain store is in-memory; /reveal is open (skeleton only)
+**Context.** Phase 1 needs an off-chain PII store and a way for the verifier to obtain revealed
+records+salts. **Decision.** Use an in-memory store and an open `/reveal` endpoint for the walking
+skeleton. **Consequence.** PII still never goes on-chain (only salted commitments do), but encryption
+at rest and access-controlled reveal are explicitly Phase 3, not now. Documented so the skeleton's
+openness is not mistaken for the target design.
+
+## D-009 · 2026-06-28 · accepted — ranking_hash binds donor + policy + ordered ranked commitments
+**Context.** The decision needs a single recomputable value pinning the exact ranking. **Decision.**
+`ranking_hash = keccak256(canon_v1({donor_commitment, policy_version, ranked_recipient_commitments}))`,
+reusing the commitment serialization so the JS verifier recomputes it on the same code path.
+**Consequence.** Reordering the ranking changes the hash (proved by tests); one canon-v1 spec serves
+both commitments and the decision hash.
+
+## D-008 · 2026-06-28 · accepted — Skeleton policy id is "skeleton-waiting-time-v0", not kidney_v1
+**Context.** The walking skeleton ranks by one trivial factor (waiting time), which is NOT the CAS
+policy. **Decision.** Log the policy version as `skeleton-waiting-time-v0`. **Consequence.** The
+on-chain log never falsely claims the real `kidney_v1` CAS was applied; swapping in the Phase 2 scorer
+behind the same interface bumps the logged version honestly.
+
 ## D-007 · 2026-06-27 · accepted — Build the verify loop first, with a trivial scorer
 **Context.** The riskiest integration is not the CAS arithmetic; it is getting three independent
 implementations (Python engine, Solidity ledger, JS browser verifier) to agree on *the same bytes →
