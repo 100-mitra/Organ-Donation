@@ -28,25 +28,42 @@ from eth_hash.auto import keccak
 CANONICALIZATION_VERSION = "canon-v1"
 
 
-def _reject_floats(value: Any, path: str = "$") -> None:
-    """Recursively assert no float appears anywhere in *value*.
+# canon-v1 integers MUST be within the JS safe-integer range, so Python and JS
+# serialize them identically. Beyond this a JS double silently loses precision
+# (and may switch to exponent form), diverging from Python's exact int. See
+# docs/canonicalization.md.
+MAX_SAFE_INT = 2**53 - 1  # 9007199254740991 == Number.MAX_SAFE_INTEGER
 
-    bool is a subclass of int in Python and is allowed; float is not. Keys must
-    be strings (JSON requires it, and it keeps key-sorting well defined).
+
+def _assert_canon_valid(value: Any, path: str = "$") -> None:
+    """Recursively validate a record against canon-v1.
+
+    Rejects: floats (any — they diverge across platforms), integers outside
+    [-MAX_SAFE_INT, MAX_SAFE_INT], and non-string object keys. bool is an int
+    subclass carrying value 0/1 and is an allowed scalar.
     """
+    if isinstance(value, bool):
+        return  # True/False are valid; do not treat as out-of-range ints
     if isinstance(value, float):
         raise ValueError(
-            f"float found at {path}: {value!r}. Records must be integer/fixed-point "
-            "only (CLAUDE.md determinism rule)."
+            f"float at {path}: {value!r}. canon-v1 is integer-only "
+            "(floats diverge across platforms)."
         )
+    if isinstance(value, int):
+        if not (-MAX_SAFE_INT <= value <= MAX_SAFE_INT):
+            raise ValueError(
+                f"integer out of canon-v1 safe range at {path}: {value!r}. "
+                f"Must be within +/-{MAX_SAFE_INT} (JS Number.MAX_SAFE_INTEGER)."
+            )
+        return
     if isinstance(value, dict):
         for k, v in value.items():
             if not isinstance(k, str):
                 raise ValueError(f"non-string object key at {path}: {k!r}")
-            _reject_floats(v, f"{path}.{k}")
+            _assert_canon_valid(v, f"{path}.{k}")
     elif isinstance(value, (list, tuple)):
         for i, v in enumerate(value):
-            _reject_floats(v, f"{path}[{i}]")
+            _assert_canon_valid(v, f"{path}[{i}]")
 
 
 def canonical_json(record: dict) -> str:
@@ -56,7 +73,7 @@ def canonical_json(record: dict) -> str:
     JS ``JSON.stringify`` rather than Python's default \\uXXXX escaping). Floats
     are rejected before serialization.
     """
-    _reject_floats(record)
+    _assert_canon_valid(record)
     return json.dumps(
         record,
         sort_keys=True,

@@ -6,6 +6,96 @@
 
 ---
 
+## D-015 · 2026-06-28 · partially resolved — kind-mislabel FIXED; subset-drop deferred to Phase 3
+**Context.** Re-running the adversarial workflow on the D-013 fix confirmed the binding closes the
+*fabrication/substitution* attack (a revealed record never Registered is rejected — proven by N2), but
+it only enforces **revealed ⊆ registered**, not coverage. Two residual attacks were found:
+- **[HIGH] kind-mislabel — RESOLVED (2026-06-28).** A registered+revealed recipient tagged with a bogus
+  `kind` (or relabelled as a second donor) passed the binding loop but was filtered out of the re-rank,
+  hiding it from the ranking. **Fixed verifier-side, no contract change** (maintainer chose this): both
+  verifiers now (1) reject any unrecognized `kind`, (2) require exactly one donor matching the on-chain
+  donor commitment, and (3) assert the ranked set equals the revealed-recipient set (coverage). Closed
+  by isolating unit tests in both languages.
+- **[CRITICAL] subset-drop — OPEN, deferred to Phase 3.** A dishonest server reveals only a *subset* of
+  the registered pool and logs a decision over that subset; binding + re-rank + hash all pass → a
+  top-priority registered recipient is silently dropped (the "no silent queue-jumping" guarantee, §2).
+  **Why deferred:** a correct fix needs the verifier to know the *decision's candidate pool*, but the
+  on-chain `Registered` set is **global and accumulates across every /seed** (new salts each time), so a
+  naive "registered minus donor == ranked" check false-positives after repeated seeds. A correct fix
+  needs registration scoped per match-run — a registration-epoch notion or logging the pool in the
+  decision (a **contract change**, beyond the "AuditLedger unchanged" constraint). Tracked for Phase 3
+  ("real audit ledger"), where persistent, scoped registration lands.
+**Status.** kind-mislabel resolved; subset-drop documented + deferred. *(From re-verification of D-013.)*
+
+## D-014 · 2026-06-28 · accepted — canon-v1 integer/float hardening + frozen-vector matrix
+**Context.** Adversarial review found two latent Python↔JS divergences the single frozen vector never
+exercised: integers > 2^53 (Python keeps precision, JS rounds the double) and the `2.0`/`2` asymmetry
+(Python rejects the float type, JS can't see it). **Decision.** (1) Bound canon-v1 integers to the JS
+safe range `±(2^53-1)`; both ports reject out-of-range (encode bigger values as strings). (2) Keep
+Python's strict float-*type* rejection; document that JS validates by *value* (`Number.isSafeInteger`)
+— an input-validation asymmetry with **no output divergence** (every jointly-accepted value
+canonicalizes identically). (3) Expand frozen vectors from 1 to **7** (large/negative ints, key
+ordering, unicode incl. emoji, nested empties, scalars, deep nesting). **Kept the label `canon-v1`**:
+no previously-valid input's serialization changed (the R001 commitment is byte-identical), so no
+on-chain data is invalidated and no version bump is warranted — this corrects an under-specification
+rather than redefining the format. **Consequence.** Python and JS now reproduce the full matrix
+byte-for-byte; the determinism foundation is pinned by tests, not merely asserted. *(From critique #5 /
+review Group B.)*
+
+## D-013 · 2026-06-28 · RESOLVED (2026-06-28) — Phase 1 verifier now binds /reveal to on-chain registrations
+**Resolution.** Fixed in Phase 1 scope, no contract change: both verifiers now read the on-chain
+`Registered` set (`/commitments`) and require every revealed record to open to a commitment that was
+actually registered *before* re-ranking — so a substituted/fabricated pool is rejected. Proven by an
+isolating unit test (ranking passes, binding fails) and a live N2 negative in both languages. This is
+§8/§10 spec-conformance, not new scope. *(Residual, genuinely deferred: binding the FULL candidate set
+— i.e. detecting a registered recipient silently omitted from a decision — needs the decision to commit
+to its pool on-chain, a contract change, so it stays a later-phase item.)*
+
+**Context.** An adversarial review of the green Phase 1 loop confirmed a soundness gap: the verifier
+recomputes from whatever `/reveal` returns and never cross-checks it against the on-chain `Registered`
+commitments, so a dishonest allocator could reveal a different pool than it committed and still PASS
+(plus sibling cases: dropped candidate, omitted recipient, duplicate ids). **Decision (provisional).**
+Phase 1 ships at its DoD with this documented as a KNOWN LIMITATION; whether to harden now (read
+`Registered` events + set-equality/permutation/uniqueness checks — no contract change) or carry it into
+Phase 3 ("real audit ledger + privacy") is a maintainer call. **Consequence.** The Phase 1 verifiability
+demo is honest only for the *cooperative* path; the strong "verify the allocation was faithful" claim
+should not be made until this binding exists. Full write-up + recommended fix in
+[`MORNING_REPORT.md`](MORNING_REPORT.md). Status stays **open** until the maintainer decides.
+
+## D-012 · 2026-06-28 · accepted — Hardhat node holds the allocator key in the skeleton
+**Context.** Writes are role-gated to the `allocator`. **Decision.** In Phase 1 the local Hardhat
+node manages account 0 and signs; the API sends `transact({"from": allocator})` with no local key
+custody. **Consequence.** Keeps the skeleton minimal. A real key-custody / rotation / compromise
+story (even simulated) is deferred to the threat model + [`LATER.md`](LATER.md) (critique #8); the
+integrity model's dependence on this key is acknowledged, not yet hardened.
+
+## D-011 · 2026-06-28 · accepted — JS keccak via js-sha3; canon-v1 agreement confirmed on first try
+**Context.** Verifiability needs a *second* implementation that reproduces the engine's commitments.
+**Decision.** The browser uses `js-sha3`'s `keccak256` (Ethereum variant) and a canon-v1 port
+(`web/src/canon.js`). Its vitest reads the SAME frozen vectors as pytest. **Consequence.** Python and
+JS reproduced every vector byte-for-byte on the first run — no spec change needed. Standing rule
+holds: if they ever diverge, fix the canon-v1 spec, not one language ([[d-004]]).
+
+## D-010 · 2026-06-28 · accepted — Off-chain store is in-memory; /reveal is open (skeleton only)
+**Context.** Phase 1 needs an off-chain PII store and a way for the verifier to obtain revealed
+records+salts. **Decision.** Use an in-memory store and an open `/reveal` endpoint for the walking
+skeleton. **Consequence.** PII still never goes on-chain (only salted commitments do), but encryption
+at rest and access-controlled reveal are explicitly Phase 3, not now. Documented so the skeleton's
+openness is not mistaken for the target design.
+
+## D-009 · 2026-06-28 · accepted — ranking_hash binds donor + policy + ordered ranked commitments
+**Context.** The decision needs a single recomputable value pinning the exact ranking. **Decision.**
+`ranking_hash = keccak256(canon_v1({donor_commitment, policy_version, ranked_recipient_commitments}))`,
+reusing the commitment serialization so the JS verifier recomputes it on the same code path.
+**Consequence.** Reordering the ranking changes the hash (proved by tests); one canon-v1 spec serves
+both commitments and the decision hash.
+
+## D-008 · 2026-06-28 · accepted — Skeleton policy id is "skeleton-waiting-time-v0", not kidney_v1
+**Context.** The walking skeleton ranks by one trivial factor (waiting time), which is NOT the CAS
+policy. **Decision.** Log the policy version as `skeleton-waiting-time-v0`. **Consequence.** The
+on-chain log never falsely claims the real `kidney_v1` CAS was applied; swapping in the Phase 2 scorer
+behind the same interface bumps the logged version honestly.
+
 ## D-007 · 2026-06-27 · accepted — Build the verify loop first, with a trivial scorer
 **Context.** The riskiest integration is not the CAS arithmetic; it is getting three independent
 implementations (Python engine, Solidity ledger, JS browser verifier) to agree on *the same bytes →

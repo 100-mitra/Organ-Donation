@@ -1,6 +1,7 @@
 {
   "canonicalization_version": "canon-v1",
-  "note": "Frozen cross-language commitment test vectors. ANY independent implementation (Python engine, JS browser verifier) MUST reproduce every value below exactly. See docs/canonicalization.md. Do not edit by hand — regenerate only on a deliberate canon version bump.",
+  "note": "Frozen cross-language commitment test vectors. ANY independent implementation (Python engine, JS browser verifier) MUST reproduce every value below exactly. See docs/canonicalization.md. Do not edit by hand — regenerate only on a deliberate canon change.",
+  "integer_safe_range": 9007199254740991,
   "keccak256_empty": "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
   "vectors": [
     {
@@ -35,6 +36,84 @@
       "salt": "000102030405060708090a0b0c0d0e0f",
       "canonical_json": "{\"abo\":\"O\",\"age\":45,\"cpra\":80,\"dialysis_start_epoch_days\":19000,\"hla\":{\"A\":[1,2],\"B\":[7,8],\"DR\":[15,4]},\"id\":\"R001\",\"prior_living_donor\":false,\"region\":\"TN\",\"unacceptable_antigens\":[52,88]}",
       "commitment": "0xfd73dac0b7a8b769001e33f2f2573ede9d3022ce2682beb8bbea85ebf14fff65"
+    },
+    {
+      "name": "large_and_negative_ints",
+      "record": {
+        "big": 9007199254740991,
+        "neg": -42,
+        "zero": 0
+      },
+      "salt": "10101010101010101010101010101010",
+      "canonical_json": "{\"big\":9007199254740991,\"neg\":-42,\"zero\":0}",
+      "commitment": "0x221e3c8c66da6837a5fe2f44c9d39a0bd933c2913b417e66d65a9d8fec2b44a7"
+    },
+    {
+      "name": "key_ordering",
+      "record": {
+        "Z": 1,
+        "a": 2,
+        "0key": 3,
+        "B": 4,
+        "_under": 5
+      },
+      "salt": "20202020202020202020202020202020",
+      "canonical_json": "{\"0key\":3,\"B\":4,\"Z\":1,\"_under\":5,\"a\":2}",
+      "commitment": "0x32a9072a495891c7f5b811a65117e920203cb4e38271ba5c6ab0538764b618ea"
+    },
+    {
+      "name": "unicode_values",
+      "record": {
+        "name": "नमस्ते",
+        "organ": "🫀"
+      },
+      "salt": "30303030303030303030303030303030",
+      "canonical_json": "{\"name\":\"नमस्ते\",\"organ\":\"🫀\"}",
+      "commitment": "0x3eae4f674295b2a834cd93f668546978704fdf7bfe2cc18aa1a31e169a671cde"
+    },
+    {
+      "name": "nested_empty",
+      "record": {
+        "obj": {},
+        "arr": [],
+        "mix": {
+          "a": [],
+          "b": {}
+        }
+      },
+      "salt": "40404040404040404040404040404040",
+      "canonical_json": "{\"arr\":[],\"mix\":{\"a\":[],\"b\":{}},\"obj\":{}}",
+      "commitment": "0x6b6a3782ea1d50a8d063b5d1405d27bb6c520d91ba92b5614a42c8e85fe7a52b"
+    },
+    {
+      "name": "scalars",
+      "record": {
+        "t": true,
+        "f": false,
+        "n": null,
+        "s": "x"
+      },
+      "salt": "50505050505050505050505050505050",
+      "canonical_json": "{\"f\":false,\"n\":null,\"s\":\"x\",\"t\":true}",
+      "commitment": "0x0b99e34976c5e0e6f41be879d00b2916969f48a1bb645f446a71b1a425baaf3c"
+    },
+    {
+      "name": "deep_nesting",
+      "record": {
+        "a": {
+          "b": {
+            "c": [
+              1,
+              {
+                "d": 2
+              }
+            ]
+          }
+        }
+      },
+      "salt": "60606060606060606060606060606060",
+      "canonical_json": "{\"a\":{\"b\":{\"c\":[1,{\"d\":2}]}}}",
+      "commitment": "0x7e55f09182f1c3a7b3ac1cb3a3baed92089a8695e40196b0ebcff460fbddedff"
     }
   ]
 }
