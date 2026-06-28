@@ -83,11 +83,13 @@ export function commit(record, saltHex) {
   return "0x" + keccakHex(combined);
 }
 
-// Mirrors engine/decision.py: bind donor + policy + ordered ranked commitments.
-export function rankingHash(donorCommitment, rankedRecipientCommitments, policyVersion) {
+// Mirrors engine/decision.py: bind donor + policy + the full candidate POOL
+// (Phase 3, closes subset-drop) + the ordered ranked commitments.
+export function rankingHash(donorCommitment, candidatePool, rankedRecipientCommitments, policyVersion) {
   return hashCanonical({
     donor_commitment: donorCommitment,
     policy_version: policyVersion,
+    candidate_pool: candidatePool,
     ranked_recipient_commitments: rankedRecipientCommitments,
   });
 }
