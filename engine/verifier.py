@@ -19,6 +19,11 @@ from engine.commitments import commit
 from engine.decision import ranking_hash
 from engine.scoring import rank_recipients
 
+# A revealed record may only be one of these. An UNRECOGNIZED kind must fail
+# verification (not be silently skipped), else a recipient can hide from the
+# ranking under a bogus label (D-015 kind-mislabel).
+KNOWN_KINDS = ("recipient", "donor")
+
 
 def verify_decision(
     onchain: dict,
@@ -43,7 +48,22 @@ def verify_decision(
             }
         )
 
-    # 2. independent re-rank of the (now bound) revealed recipients
+    # 2. KNOWN KINDS: an unrecognized kind is a hard failure (D-015 kind-mislabel)
+    #    — otherwise a recipient could hide from the ranking under a bogus label.
+    unknown = [rid for rid, e in revealed.items() if e["kind"] not in KNOWN_KINDS]
+    checks.append({"name": "all revealed kinds are recognized", "ok": not unknown})
+
+    # 3. exactly ONE donor, matching the on-chain donor commitment (blocks
+    #    relabelling a recipient as a second donor to hide it).
+    donors = [e for e in revealed.values() if e["kind"] == "donor"]
+    checks.append(
+        {
+            "name": "exactly one donor, matching on-chain",
+            "ok": len(donors) == 1 and donors[0]["commitment"] == onchain["donorCommitment"],
+        }
+    )
+
+    # 4. independent re-rank of the (now bound) revealed recipients
     recips = [e for e in revealed.values() if e["kind"] == "recipient"]
     ranked = rank_recipients([e["record"] for e in recips])
     by_id = {e["record"]["id"]: e for e in recips}
@@ -55,14 +75,16 @@ def verify_decision(
         }
     )
 
-    # 3. donor commitment + ranking hash
-    donor = next((e for e in revealed.values() if e["kind"] == "donor"), None)
+    # 5. COVERAGE: the ranking must cover EXACTLY the revealed recipients (every
+    #    revealed recipient present, no extras) — closes kind-mislabel omission.
     checks.append(
         {
-            "name": "donor commitment == on-chain",
-            "ok": donor is not None and donor["commitment"] == onchain["donorCommitment"],
+            "name": "ranked set == revealed recipient set (coverage)",
+            "ok": {e["commitment"] for e in recips} == set(onchain["rankedRecipientCommitments"]),
         }
     )
+
+    # 6. ranking hash
     recomputed_hash = ranking_hash(
         onchain["donorCommitment"], recomputed, onchain["policyVersion"]
     )

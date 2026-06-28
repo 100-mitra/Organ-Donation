@@ -62,3 +62,30 @@ def test_rejects_a_tampered_ranking_hash():
     onchain = {**onchain, "rankingHash": "0x" + "00" * 32}
     ok, _ = verify_decision(onchain, revealed, registered)
     assert ok is False
+
+
+def test_rejects_recipient_hidden_under_unknown_kind():
+    # D-015 kind-mislabel: R1 is registered + revealed but tagged "ghost" and dropped
+    # from the ranking. Binding/order all pass; the kind check must catch it.
+    onchain, revealed, registered = _fixture()
+    revealed["R1"] = {**revealed["R1"], "kind": "ghost"}
+    ranked = [revealed["R2"]["commitment"]]
+    onchain = {**onchain, "rankedRecipientCommitments": ranked,
+               "rankingHash": ranking_hash(revealed["D1"]["commitment"], ranked, POLICY)}
+    ok, checks = verify_decision(onchain, revealed, registered)
+    assert ok is False
+    assert next(c for c in checks if "kinds are recognized" in c["name"])["ok"] is False
+    assert next(c for c in checks if c["name"].startswith("recomputed ranking =="))["ok"] is True
+
+
+def test_rejects_recipient_relabeled_as_second_donor():
+    # The relabel-as-donor variant: R1 -> kind "donor" (now two donors) and dropped
+    # from the ranking. The exactly-one-donor check must catch it.
+    onchain, revealed, registered = _fixture()
+    revealed["R1"] = {**revealed["R1"], "kind": "donor"}
+    ranked = [revealed["R2"]["commitment"]]
+    onchain = {**onchain, "rankedRecipientCommitments": ranked,
+               "rankingHash": ranking_hash(revealed["D1"]["commitment"], ranked, POLICY)}
+    ok, checks = verify_decision(onchain, revealed, registered)
+    assert ok is False
+    assert next(c for c in checks if "exactly one donor" in c["name"])["ok"] is False

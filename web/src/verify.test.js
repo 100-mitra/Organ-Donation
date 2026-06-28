@@ -73,4 +73,31 @@ describe("verifyDecision", () => {
     const res = verifyDecision(onchain, mutated, registered);
     expect(res.allOk).toBe(false);
   });
+
+  it("rejects a recipient hidden under an unknown kind (D-015)", () => {
+    // R1 registered + revealed but tagged "ghost" and dropped from the ranking.
+    const mutated = { ...revealed, R1: { ...revealed.R1, kind: "ghost" } };
+    const ranked = [revealed.R2.commitment];
+    const tampered = {
+      ...onchain,
+      rankedRecipientCommitments: ranked,
+      rankingHash: rankingHash(revealed.D1.commitment, ranked, policy),
+    };
+    const res = verifyDecision(tampered, mutated, registered);
+    expect(res.allOk).toBe(false);
+    expect(res.checks.find((c) => c.name.includes("kinds are recognized")).ok).toBe(false);
+  });
+
+  it("rejects a recipient relabeled as a second donor", () => {
+    const mutated = { ...revealed, R1: { ...revealed.R1, kind: "donor" } };
+    const ranked = [revealed.R2.commitment];
+    const tampered = {
+      ...onchain,
+      rankedRecipientCommitments: ranked,
+      rankingHash: rankingHash(revealed.D1.commitment, ranked, policy),
+    };
+    const res = verifyDecision(tampered, mutated, registered);
+    expect(res.allOk).toBe(false);
+    expect(res.checks.find((c) => c.name.includes("exactly one donor")).ok).toBe(false);
+  });
 });

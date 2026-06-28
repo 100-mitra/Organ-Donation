@@ -6,6 +6,10 @@
 
 import { commit, rankingHash } from "./canon.js";
 
+// A revealed record may only be one of these; an unrecognized kind is a hard
+// failure (D-015 kind-mislabel). Must match engine/verifier.py KNOWN_KINDS.
+const KNOWN_KINDS = new Set(["recipient", "donor"]);
+
 // Trivial Phase 1 policy: waiting_days desc, id asc. Must match engine/scoring.py.
 export function rankRecipients(records) {
   return [...records].sort((a, b) => {
@@ -30,7 +34,18 @@ export function verifyDecision(onchain, revealed, registeredCommitments = []) {
     checks.push({ name: `revealed ${id}: opens + registered on-chain`, ok: opens && isRegistered });
   }
 
-  // 2. independently re-rank the revealed recipients
+  // 2. KNOWN KINDS: an unrecognized kind is a hard failure (D-015 kind-mislabel).
+  const unknown = Object.entries(revealed).filter(([, e]) => !KNOWN_KINDS.has(e.kind));
+  checks.push({ name: "all revealed kinds are recognized", ok: unknown.length === 0 });
+
+  // 3. exactly ONE donor, matching on-chain (blocks relabelling a recipient as donor).
+  const donors = Object.values(revealed).filter((e) => e.kind === "donor");
+  checks.push({
+    name: "exactly one donor, matching on-chain",
+    ok: donors.length === 1 && donors[0].commitment === onchain.donorCommitment,
+  });
+
+  // 4. independently re-rank the revealed recipients
   const recips = Object.values(revealed).filter((e) => e.kind === "recipient");
   const ranked = rankRecipients(recips.map((e) => e.record));
   const byId = Object.fromEntries(recips.map((e) => [e.record.id, e]));
@@ -40,12 +55,13 @@ export function verifyDecision(onchain, revealed, registeredCommitments = []) {
     ok: JSON.stringify(recomputedRanked) === JSON.stringify(onchain.rankedRecipientCommitments),
   });
 
-  // 3. donor commitment + ranking hash
-  const donor = Object.values(revealed).find((e) => e.kind === "donor");
-  checks.push({
-    name: "donor commitment == on-chain",
-    ok: !!donor && donor.commitment === onchain.donorCommitment,
-  });
+  // 5. COVERAGE: ranking must cover EXACTLY the revealed recipients (closes omission).
+  const revealedSet = new Set(recips.map((e) => e.commitment));
+  const rankedSet = new Set(onchain.rankedRecipientCommitments);
+  const coverage = revealedSet.size === rankedSet.size && [...revealedSet].every((c) => rankedSet.has(c));
+  checks.push({ name: "ranked set == revealed recipient set (coverage)", ok: coverage });
+
+  // 6. ranking hash
   const recomputedHash = rankingHash(onchain.donorCommitment, recomputedRanked, onchain.policyVersion);
   checks.push({ name: "recomputed ranking hash == on-chain", ok: recomputedHash === onchain.rankingHash });
 
