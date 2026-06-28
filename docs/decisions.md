@@ -6,6 +6,22 @@
 
 ---
 
+## D-024 · 2026-06-28 · accepted — Phase 5 evaluation: framing + simulation design + reproducibility
+**Context.** The evaluation must quantify the policy's behaviour without over-claiming fairness on
+synthetic data. **Decisions.** (1) **Framing:** report "**what the mechanism does**" — the relative
+trade-offs vs the FCFS baseline — explicitly NOT a proof of real-world fairness (synthetic data can't
+establish that). (2) **Simulation:** a fixed seeded waitlist (~hundreds, India ABO/HLA/CPRA via
+`engine/data_gen`) + a deceased-donor stream arriving over time; each donor's kidney goes to rank #1, who
+leaves the waitlist — deterministic, no RNG in the sim. (3) **FCFS baseline = same hard gates, ranked
+purely by waiting time** (so the comparison isolates the *scoring* effect, not the gates). (4) **Longevity
+variant** = `kidney_v1` with the (default-0) `longevity_epts` weight turned on, to surface the age/equity
+tension. (5) **Reproducibility:** the equity + sensitivity numbers and the charts are byte-deterministic
+(seeded); the systems *timing* (throughput/latency) is illustrative + machine-dependent, and gas/op is
+measured separately by `scripts/gas.js`. (6) `matplotlib`/`numpy` are eval-only deps. **Consequence.**
+Defensible relative findings: CAS lifts high-CPRA access ~35%→71% and pediatric ~38%→83% (cost: low-CPRA
+/adult); the blood-type-O disadvantage persists in both (ABO, not scoring); longevity-on drops mean
+transplant age ~30→22. Numbers + charts in [`../evaluation/RESULTS.md`](../evaluation/RESULTS.md).
+
 ## D-023 · 2026-06-28 · accepted — Phase 4 UI: Verify reuses the lockstep verifier; tamper demo is the centerpiece
 **Context.** The web UI must let a non-technical person drive register → match → view explanations →
 verify, with verification as the centerpiece. **Decisions.** (1) The Verify panel calls the EXISTING

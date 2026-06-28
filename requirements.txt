@@ -20,3 +20,8 @@ web3>=7.0
 
 # Tests.
 pytest>=8.0
+
+# Phase 5 evaluation harness (charts + stats). Heavier; only needed to reproduce
+# the evaluation under evaluation/.
+matplotlib>=3.8
+numpy>=1.26

@@ -36,3 +36,17 @@ are *true* (the oracle problem). State the boundary plainly; owning it is the co
 - **Erasure (§14).** `erase()` destroys the per-record salt + ciphertext; the on-chain commitment
   remains (append-only) but is now **unlinkable**. *Documented tension (D-005):* erasing a record makes
   its past decisions unverifiable — auditable XOR erasable, per record.
+
+## What the chain actually adds (and what it does not)
+Stated honestly, because over-claiming is the field's most common failure (CLAUDE.md §2, §15).
+- **Adds:** a tamper-evident, role-gated, append-only log that lets an independent party *recompute the
+  ranking and confirm it faithfully executed the published policy* for the committed inputs — and
+  *attributability* (who attested what, when). That is the whole guarantee: **process integrity**.
+- **Does NOT add:** *input truth* (the oracle boundary above); *decentralized trust* — this is a single
+  local node **simulating** a NOTTO+hospitals consortium, so the BFT-consensus value is simulated, not
+  demonstrated; and it is **not** intrinsically better than a signed, append-only Merkle log until there
+  are multiple mutually-distrusting validators. The honest claim is *auditable, policy-faithful
+  allocation*, not "decentralized" or "trustless."
+- **Equity is policy, not security.** The Phase 5 metrics (evaluation/RESULTS.md) show *what the policy
+  trades off* (e.g. CAS lifts sensitized/pediatric access; longevity weight disadvantages older
+  patients) — design choices the ledger faithfully executes, **not** fairness the chain guarantees.
