@@ -104,6 +104,12 @@ class Chain:
         """All registered commitments (recipients + donors) — for the binding check."""
         return [r["commitment"] for r in self.read_registrations()]
 
+    def active_recipient_commitments(self) -> list[str]:
+        """Currently-active recipient commitments (registered, not erased)."""
+        erased = {e["commitment"] for e in self.read_erasures()}
+        return [r["commitment"] for r in self.read_registrations()
+                if r["kind"] == KIND_RECIPIENT and r["commitment"] not in erased]
+
     def read_decisions(self) -> list[dict]:
         logs = self.contract.events.DecisionLogged().get_logs(from_block=0)
         out = []

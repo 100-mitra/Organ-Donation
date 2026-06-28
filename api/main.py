@@ -72,6 +72,12 @@ def register(body: RegisterBody) -> dict:
 
 @app.post("/seed")
 def seed() -> dict:
+    # Reset the on-chain active recipient set (erase any leftovers) so the next
+    # match's pool equals exactly this seed's pool. Old decisions still verify —
+    # the auditor reconstructs the active set as-of each decision's block.
+    reset = chain().active_recipient_commitments()
+    for c in reset:
+        chain().erase_recipient(c)
     store.clear()
     out = []
     for rec in RECIPIENTS:
@@ -80,7 +86,8 @@ def seed() -> dict:
         out.append({"id": rec["id"], "commitment": e["commitment"]})
     d = store.add(DONOR, "donor")
     chain().register_donor(d["commitment"])
-    return {"donor": {"id": DONOR["id"], "commitment": d["commitment"]}, "recipients": out}
+    return {"donor": {"id": DONOR["id"], "commitment": d["commitment"]},
+            "recipients": out, "reset_erased": len(reset)}
 
 
 @app.post("/match")
