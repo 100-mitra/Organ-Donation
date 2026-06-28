@@ -1,67 +1,66 @@
-// Independent recompute-and-compare — the browser Verify logic.
+// Independent recompute-and-compare — the browser Verify logic (Phase 2: full CAS).
 //
-// Mirrors engine/scoring.py (trivial policy) + scripts/e2e.py (recompute). Given
-// an on-chain decision and the revealed records+salts, it re-derives the ranking
-// from scratch and checks it equals what was logged.
+// Mirrors engine/verifier.py. Given an on-chain decision, the revealed
+// records+salts, the on-chain Registered set, and the policy, it re-derives the
+// CAS ranking from scratch (gates + integer scoring + tie-breaks) and checks it
+// equals what was logged. The CAS itself lives in cas.js (twin of engine/scoring.py).
 
 import { commit, rankingHash } from "./canon.js";
+import { rank as casRank } from "./cas.js";
 
-// A revealed record may only be one of these; an unrecognized kind is a hard
-// failure (D-015 kind-mislabel). Must match engine/verifier.py KNOWN_KINDS.
+// A revealed record may only be one of these (D-015 kind-mislabel).
 const KNOWN_KINDS = new Set(["recipient", "donor"]);
-
-// Trivial Phase 1 policy: waiting_days desc, id asc. Must match engine/scoring.py.
-export function rankRecipients(records) {
-  return [...records].sort((a, b) => {
-    if (b.waiting_days !== a.waiting_days) return b.waiting_days - a.waiting_days;
-    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
-  });
-}
 
 // onchain: { donorCommitment, rankingHash, policyVersion, rankedRecipientCommitments }
 // revealed: { id: { record, salt, commitment, kind } }
-// registeredCommitments: the on-chain Registered set (from GET /commitments)
-export function verifyDecision(onchain, revealed, registeredCommitments = []) {
+// registeredCommitments: the on-chain Registered set (GET /commitments)
+// policy: the versioned policy JSON (GET /policy) — required for the CAS recompute
+export function verifyDecision(onchain, revealed, registeredCommitments = [], policy = null) {
   const checks = [];
   const registered = new Set(registeredCommitments);
 
-  // 1. BINDING (before re-ranking): each revealed record must (a) open to its
-  //    stored commitment and (b) that commitment must have been Registered
-  //    on-chain. A substituted/fabricated record fails (b) (D-013).
+  // 1. BINDING (before re-ranking): each revealed record opens + was Registered (D-013).
   for (const [id, e] of Object.entries(revealed)) {
     const opens = commit(e.record, e.salt) === e.commitment;
-    const isRegistered = registered.has(e.commitment);
-    checks.push({ name: `revealed ${id}: opens + registered on-chain`, ok: opens && isRegistered });
+    checks.push({
+      name: `revealed ${id}: opens + registered on-chain`,
+      ok: opens && registered.has(e.commitment),
+    });
   }
 
-  // 2. KNOWN KINDS: an unrecognized kind is a hard failure (D-015 kind-mislabel).
+  // 2. KNOWN KINDS (D-015).
   const unknown = Object.entries(revealed).filter(([, e]) => !KNOWN_KINDS.has(e.kind));
   checks.push({ name: "all revealed kinds are recognized", ok: unknown.length === 0 });
 
-  // 3. exactly ONE donor, matching on-chain (blocks relabelling a recipient as donor).
+  // 3. exactly ONE donor matching on-chain (D-015).
   const donors = Object.values(revealed).filter((e) => e.kind === "donor");
-  checks.push({
-    name: "exactly one donor, matching on-chain",
-    ok: donors.length === 1 && donors[0].commitment === onchain.donorCommitment,
-  });
+  const oneDonor = donors.length === 1 && donors[0].commitment === onchain.donorCommitment;
+  checks.push({ name: "exactly one donor, matching on-chain", ok: oneDonor });
 
-  // 4. independently re-rank the revealed recipients
+  // 4. recompute the CAS ranking (gates + integer scoring + tie-break) and compare.
   const recips = Object.values(revealed).filter((e) => e.kind === "recipient");
-  const ranked = rankRecipients(recips.map((e) => e.record));
-  const byId = Object.fromEntries(recips.map((e) => [e.record.id, e]));
-  const recomputedRanked = ranked.map((r) => byId[r.id].commitment);
-  checks.push({
-    name: "recomputed ranking == on-chain ranked commitments",
-    ok: JSON.stringify(recomputedRanked) === JSON.stringify(onchain.rankedRecipientCommitments),
-  });
+  let recomputedRanked = [];
+  let rankedOk = false;
+  let coverageOk = false;
+  if (oneDonor && policy) {
+    const byId = Object.fromEntries(recips.map((e) => [e.record.id, e]));
+    const { ranked } = casRank(
+      donors[0].record,
+      recips.map((e) => e.record),
+      policy,
+      onchain.donorCommitment
+    );
+    recomputedRanked = ranked.map((e) => byId[e.id].commitment);
+    rankedOk =
+      JSON.stringify(recomputedRanked) === JSON.stringify(onchain.rankedRecipientCommitments);
+    const elig = new Set(recomputedRanked);
+    const logged = new Set(onchain.rankedRecipientCommitments);
+    coverageOk = elig.size === logged.size && [...elig].every((c) => logged.has(c));
+  }
+  checks.push({ name: "recomputed CAS ranking == on-chain ranked commitments", ok: rankedOk });
+  checks.push({ name: "ranked set == eligible revealed recipients (coverage)", ok: coverageOk });
 
-  // 5. COVERAGE: ranking must cover EXACTLY the revealed recipients (closes omission).
-  const revealedSet = new Set(recips.map((e) => e.commitment));
-  const rankedSet = new Set(onchain.rankedRecipientCommitments);
-  const coverage = revealedSet.size === rankedSet.size && [...revealedSet].every((c) => rankedSet.has(c));
-  checks.push({ name: "ranked set == revealed recipient set (coverage)", ok: coverage });
-
-  // 6. ranking hash
+  // 5. ranking hash.
   const recomputedHash = rankingHash(onchain.donorCommitment, recomputedRanked, onchain.policyVersion);
   checks.push({ name: "recomputed ranking hash == on-chain", ok: recomputedHash === onchain.rankingHash });
 

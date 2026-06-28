@@ -53,7 +53,7 @@ export function canonicalJson(record) {
   return JSON.stringify(sortDeep(record));
 }
 
-function hexToBytes(hex) {
+export function hexToBytes(hex) {
   const h = hex.startsWith("0x") ? hex.slice(2) : hex;
   const out = new Uint8Array(h.length / 2);
   for (let i = 0; i < out.length; i++) {

@@ -147,6 +147,12 @@ def commitments() -> dict:
     return {"registered": chain().read_commitments()}
 
 
+@app.get("/policy")
+def policy() -> dict:
+    """The versioned CAS policy the verifier re-applies (same JSON the engine loads)."""
+    return load_policy(POLICY_VERSION)
+
+
 @app.get("/reveal")
 def reveal() -> dict:
     """Records + salts + commitments — the inputs an auditor recomputes from.

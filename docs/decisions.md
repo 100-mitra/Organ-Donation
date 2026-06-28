@@ -6,6 +6,20 @@
 
 ---
 
+## D-018 · 2026-06-28 · accepted — CAS ranking is byte-for-byte parity-locked across Python and JS
+**Context.** The verifiability thesis needs the CAS recompute to be identical in the engine and the
+browser, the same way commitments were locked (D-004/D-011). **Decision.** `web/src/cas.js` is the JS
+twin of `engine/scoring.py` + `compatibility.py` (integer arithmetic; `Math.floor` for the one integer
+division; keccak tie-break via the shared canon-v1 keccak). Frozen `cas_ranking_vectors.json` fixes
+three cases — the demo pool (with gated candidates), an 8-candidate synthetic pool, and a pure
+keccak-tie case (three identical-CAS recipients) — recording each candidate's eligibility + CAS +
+per-attribute points + the eligible ranking. Both `engine/tests/test_cas_vectors.py` and
+`web/src/cas.test.js` must reproduce every case; the browser fetches the policy via a new `/policy`
+endpoint so it interprets the same JSON the engine loads. **Consequence.** Python and JS agreed on every
+vector on the first run — including the keccak tie-break order — so "verifiable" means independently
+reproducible for the full CAS, not just commitments. Standing rule: on divergence, fix the spec, not one
+language ([[d-004]]).
+
 ## D-017 · 2026-06-28 · accepted — Phase 2 CAS: derived inputs, tie-break seed, policy-as-JSON, eligible-coverage
 **Context.** Replacing the trivial ranking with the full integer CAS forced several determinism choices
 that the verifier (Python + JS) must reproduce identically. **Decisions.**
