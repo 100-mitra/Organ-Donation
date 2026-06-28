@@ -50,9 +50,12 @@ export default function App() {
       const revealed = await fetch(`${API}/reveal`).then((x) => x.json());
       const registered = await fetch(`${API}/commitments`).then((x) => x.json());
       const policy = await fetch(`${API}/policy`).then((x) => x.json());
+      const reg = await fetch(`${API}/registrations`).then((x) => x.json());
       const latest = audit.decisions[audit.decisions.length - 1];
       if (!latest) throw new Error("no decision on-chain yet — Match first");
-      const res = verifyDecision(latest, revealed.revealed, registered.registered, policy);
+      const res = verifyDecision(
+        latest, revealed.revealed, registered.registered, policy, reg.registrations, reg.erasures
+      );
       setVerify({ ...res, decisionId: latest.decisionId });
       say(res.allOk ? `VERIFY PASSED: decision #${latest.decisionId} recompute matches chain` : "VERIFY FAILED");
     });

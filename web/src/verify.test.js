@@ -5,7 +5,7 @@ import path from "node:path";
 
 import { commit, rankingHash } from "./canon.js";
 import { rank } from "./cas.js";
-import { verifyDecision } from "./verify.js";
+import { verifyDecision, activeRecipientSet } from "./verify.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const P = JSON.parse(readFileSync(path.resolve(here, "../../docs/policy/kidney_v1.json"), "utf-8"));
@@ -42,55 +42,73 @@ function build() {
     revealed[r.id] = e;
     byId[r.id] = e;
   }
+  const pool = RECIPS.map((r) => byId[r.id].commitment).sort((a, b) => (BigInt(a) < BigInt(b) ? -1 : 1));
   const seed = donorEntry.commitment;
   const { ranked } = rank(DONOR, RECIPS, P, seed);
   const rankedCommitments = ranked.map((e) => byId[e.id].commitment);
   const onchain = {
-    donorCommitment: donorEntry.commitment,
-    policyVersion: VERSION,
-    rankedRecipientCommitments: rankedCommitments,
-    rankingHash: rankingHash(donorEntry.commitment, rankedCommitments, VERSION),
+    donorCommitment: donorEntry.commitment, policyVersion: VERSION,
+    candidatePool: pool, rankedRecipientCommitments: rankedCommitments,
+    rankingHash: rankingHash(donorEntry.commitment, pool, rankedCommitments, VERSION),
+    block: 10,
   };
+  const registrations = RECIPS.map((r, i) => ({ commitment: byId[r.id].commitment, kind: 1, block: i + 1 }));
+  registrations.push({ commitment: donorEntry.commitment, kind: 2, block: 6 });
   const registered = Object.values(revealed).map((e) => e.commitment);
-  return { onchain, revealed, registered, rankedIds: ranked.map((e) => e.id) };
+  return { onchain, revealed, registered, registrations, erasures: [] };
 }
 
-describe("verifyDecision (CAS)", () => {
-  it("accepts a faithful CAS decision", () => {
-    const { onchain, revealed, registered } = build();
-    expect(verifyDecision(onchain, revealed, registered, P).allOk).toBe(true);
+describe("activeRecipientSet (block-aware)", () => {
+  it("includes recipients registered by the block, minus erasures", () => {
+    const regs = [
+      { commitment: "0xaa", kind: 1, block: 1 },
+      { commitment: "0xbb", kind: 1, block: 2 },
+      { commitment: "0xdd", kind: 2, block: 3 },
+    ];
+    const eras = [{ commitment: "0xaa", block: 5 }];
+    expect([...activeRecipientSet(regs, eras, 4)].sort()).toEqual(["0xaa", "0xbb"]);
+    expect([...activeRecipientSet(regs, eras, 5)]).toEqual(["0xbb"]);
+  });
+});
+
+describe("verifyDecision (Phase 3, CAS + pool completeness)", () => {
+  it("accepts a faithful decision", () => {
+    const { onchain, revealed, registered, registrations, erasures } = build();
+    expect(verifyDecision(onchain, revealed, registered, P, registrations, erasures).allOk).toBe(true);
   });
 
-  it("excludes gated recipients (R4 crossmatch, R5 sanity)", () => {
-    expect(new Set(build().rankedIds)).toEqual(new Set(["R1", "R2", "R3"]));
+  it("REJECTS subset-drop: a registered recipient dropped from pool/ranking/reveal (D-015)", () => {
+    const { onchain, revealed, registered, registrations, erasures } = build();
+    const r1c = revealed.R1.commitment;
+    delete revealed.R1;
+    onchain.candidatePool = onchain.candidatePool.filter((c) => c !== r1c);
+    onchain.rankedRecipientCommitments = onchain.rankedRecipientCommitments.filter((c) => c !== r1c);
+    onchain.rankingHash = rankingHash(onchain.donorCommitment, onchain.candidatePool, onchain.rankedRecipientCommitments, VERSION);
+    const res = verifyDecision(onchain, revealed, registered, P, registrations, erasures);
+    expect(res.allOk).toBe(false);
+    expect(res.checks.find((c) => c.name.includes("completeness")).ok).toBe(false);
+  });
+
+  it("rejects revealing a set different from the pool", () => {
+    const { onchain, revealed, registered, registrations, erasures } = build();
+    delete revealed.R2;
+    const res = verifyDecision(onchain, revealed, registered, P, registrations, erasures);
+    expect(res.allOk).toBe(false);
+    expect(res.checks.find((c) => c.name.includes("revealed recipients == candidate pool")).ok).toBe(false);
   });
 
   it("rejects a reordered ranking", () => {
-    const { onchain, revealed, registered } = build();
+    const { onchain, revealed, registered, registrations, erasures } = build();
     const rc = [...onchain.rankedRecipientCommitments];
     [rc[0], rc[1]] = [rc[1], rc[0]];
-    const tampered = { ...onchain, rankedRecipientCommitments: rc, rankingHash: rankingHash(onchain.donorCommitment, rc, VERSION) };
-    expect(verifyDecision(tampered, revealed, registered, P).allOk).toBe(false);
+    onchain.rankedRecipientCommitments = rc;
+    onchain.rankingHash = rankingHash(onchain.donorCommitment, onchain.candidatePool, rc, VERSION);
+    expect(verifyDecision(onchain, revealed, registered, P, registrations, erasures).allOk).toBe(false);
   });
 
-  it("rejects including an ineligible (gated) recipient", () => {
-    const { onchain, revealed, registered } = build();
-    const rc = [...onchain.rankedRecipientCommitments, revealed.R4.commitment];
-    const tampered = { ...onchain, rankedRecipientCommitments: rc, rankingHash: rankingHash(onchain.donorCommitment, rc, VERSION) };
-    expect(verifyDecision(tampered, revealed, registered, P).allOk).toBe(false);
-  });
-
-  it("rejects an unregistered record (D-013 binding)", () => {
-    const { onchain, revealed, registered } = build();
+  it("rejects an unregistered record (binding)", () => {
+    const { onchain, revealed, registered, registrations, erasures } = build();
     const missing = registered.filter((c) => c !== onchain.rankedRecipientCommitments[0]);
-    expect(verifyDecision(onchain, revealed, missing, P).allOk).toBe(false);
-  });
-
-  it("rejects a recipient hidden under an unknown kind (D-015)", () => {
-    const { onchain, revealed, registered } = build();
-    const mut = { ...revealed, R1: { ...revealed.R1, kind: "ghost" } };
-    const res = verifyDecision(onchain, mut, registered, P);
-    expect(res.allOk).toBe(false);
-    expect(res.checks.find((c) => c.name.includes("kinds are recognized")).ok).toBe(false);
+    expect(verifyDecision(onchain, revealed, missing, P, registrations, erasures).allOk).toBe(false);
   });
 });

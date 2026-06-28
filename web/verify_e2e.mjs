@@ -12,31 +12,54 @@ async function main() {
   const revealed = await fetch(`${API}/reveal`).then((r) => r.json());
   const registered = await fetch(`${API}/commitments`).then((r) => r.json());
   const policy = await fetch(`${API}/policy`).then((r) => r.json());
+  const reg = await fetch(`${API}/registrations`).then((r) => r.json());
 
   const latest = audit.decisions.find((x) => x.decisionId === d.decisionId);
-  const reg = registered.registered;
-  const res = verifyDecision(latest, revealed.revealed, reg, policy);
+  const cs = registered.registered;
+  const V = (oc, rv = revealed.revealed) =>
+    verifyDecision(oc, rv, cs, policy, reg.registrations, reg.erasures);
+
+  const res = V(latest);
   for (const c of res.checks) console.log(`  ${c.ok ? "[ok]  " : "[FAIL]"} ${c.name}`);
   if (!res.allOk) {
     console.error("FAIL: browser verify path does not match chain");
     process.exit(1);
   }
 
-  // N1: a tampered hash must be rejected (compare is not vacuous).
-  const tampered = { ...latest, rankingHash: "0x" + "00".repeat(32) };
-  if (verifyDecision(tampered, revealed.revealed, reg, policy).allOk) {
+  // N1: a tampered hash must be rejected.
+  if (V({ ...latest, rankingHash: "0x" + "00".repeat(32) }).allOk) {
     console.error("FAIL: tampered decision still verified");
     process.exit(1);
   }
-  console.log("  [ok]  NEGATIVE N1: tampered decision rejected");
+  console.log("  [ok]  NEGATIVE N1: tampered ranking hash rejected");
 
-  // N2: a decision commitment absent from the Registered set must be rejected (binding).
-  const regMissing = reg.filter((c) => c !== latest.rankedRecipientCommitments[0]);
-  if (verifyDecision(latest, revealed.revealed, regMissing, policy).allOk) {
+  // N2: an unregistered commitment must be rejected (binding).
+  const csMissing = cs.filter((c) => c !== latest.rankedRecipientCommitments[0]);
+  if (verifyDecision(latest, revealed.revealed, csMissing, policy, reg.registrations, reg.erasures).allOk) {
     console.error("FAIL: unregistered/substituted commitment still verified");
     process.exit(1);
   }
   console.log("  [ok]  NEGATIVE N2: unregistered/substituted commitment rejected (binding real)");
+
+  // N3 (D-015): a subset-drop decision — drop a registered recipient from the pool,
+  // ranking and reveal — must fail the completeness check.
+  const dropped = latest.candidatePool[0];
+  const droppedRid = Object.keys(revealed.revealed).find(
+    (k) => revealed.revealed[k].commitment === dropped
+  );
+  const rv2 = { ...revealed.revealed };
+  delete rv2[droppedRid];
+  const tamperedPool = {
+    ...latest,
+    candidatePool: latest.candidatePool.filter((c) => c !== dropped),
+    rankedRecipientCommitments: latest.rankedRecipientCommitments.filter((c) => c !== dropped),
+  };
+  if (V(tamperedPool, rv2).allOk) {
+    console.error("FAIL: subset-drop decision still verified");
+    process.exit(1);
+  }
+  console.log("  [ok]  NEGATIVE N3: subset-drop (dropped registered recipient) rejected (completeness, D-015)");
+
   console.log(`PASS: browser verify path green for decision #${d.decisionId}`);
 }
 

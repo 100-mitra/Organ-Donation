@@ -1,8 +1,9 @@
-"""web3.py glue to the local Hardhat AuditLedger.
+"""web3.py glue to the local Hardhat AuditLedger (Phase 3: real ledger).
 
-The Hardhat node manages the allocator's key (account 0), so we send transactions
-with ``transact({"from": allocator})`` and the node signs — no local key handling
-in the skeleton. Reads decisions back from on-chain events.
+The Hardhat node manages the allocator's key (account 0), so transactions are sent
+with ``transact({"from": allocator})`` and the node signs. Reads the registration /
+erasure / decision events back (with block numbers) so an auditor can reconstruct
+the active recipient set and confirm a decision's pool completeness (D-015).
 """
 from __future__ import annotations
 
@@ -16,9 +17,11 @@ RPC_URL = os.environ.get("RPC_URL", "http://127.0.0.1:8545")
 NETWORK = os.environ.get("CHAIN_NETWORK", "localhost")
 DEPLOYMENTS_DIR = Path(__file__).resolve().parents[1] / "deployments"
 
+KIND_RECIPIENT = 1
+KIND_DONOR = 2
+
 
 def _to_b32(hexstr: str) -> bytes:
-    """0x-hex commitment string -> 32 raw bytes for an on-chain bytes32 arg."""
     h = hexstr[2:] if hexstr.startswith("0x") else hexstr
     b = bytes.fromhex(h)
     if len(b) != 32:
@@ -27,7 +30,6 @@ def _to_b32(hexstr: str) -> bytes:
 
 
 def _to_0x(b: bytes) -> str:
-    """Raw bytes from an event -> lowercase 0x-hex (matches engine output)."""
     return "0x" + bytes(b).hex()
 
 
@@ -52,53 +54,76 @@ class Chain:
     def is_connected(self) -> bool:
         return self.w3.is_connected()
 
-    def register_commitment(self, commitment_hex: str) -> str:
-        tx = self.contract.functions.registerCommitment(
-            _to_b32(commitment_hex)
-        ).transact({"from": self.allocator})
+    def _send(self, fn) -> str:
+        tx = fn.transact({"from": self.allocator})
         self.w3.eth.wait_for_transaction_receipt(tx)
         return _to_0x(tx)
+
+    def register_recipient(self, commitment: str) -> str:
+        return self._send(self.contract.functions.registerRecipient(_to_b32(commitment)))
+
+    def register_donor(self, commitment: str) -> str:
+        return self._send(self.contract.functions.registerDonor(_to_b32(commitment)))
+
+    def erase_recipient(self, commitment: str) -> str:
+        return self._send(self.contract.functions.eraseRecipient(_to_b32(commitment)))
 
     def log_decision(
         self,
         donor_commitment: str,
-        ranked_commitments: list[str],
+        candidate_pool: list[str],
+        ranked_eligible: list[str],
         ranking_hash: str,
         policy_version: str,
     ) -> dict:
         tx = self.contract.functions.logDecision(
             _to_b32(donor_commitment),
-            [_to_b32(c) for c in ranked_commitments],
+            [_to_b32(c) for c in candidate_pool],
+            [_to_b32(c) for c in ranked_eligible],
             _to_b32(ranking_hash),
             policy_version,
         ).transact({"from": self.allocator})
         receipt = self.w3.eth.wait_for_transaction_receipt(tx)
         evts = self.contract.events.DecisionLogged().process_receipt(receipt)
-        decision_id = int(evts[0]["args"]["decisionId"])
-        return {"decisionId": decision_id, "tx": _to_0x(tx)}
+        return {"decisionId": int(evts[0]["args"]["decisionId"]), "tx": _to_0x(tx)}
+
+    def read_registrations(self) -> list[dict]:
+        logs = self.contract.events.Registered().get_logs(from_block=0)
+        return [
+            {"commitment": _to_0x(e["args"]["commitment"]), "kind": int(e["args"]["kind"]),
+             "block": int(e["blockNumber"])}
+            for e in logs
+        ]
+
+    def read_erasures(self) -> list[dict]:
+        logs = self.contract.events.Erased().get_logs(from_block=0)
+        return [{"commitment": _to_0x(e["args"]["commitment"]), "block": int(e["blockNumber"])}
+                for e in logs]
+
+    def read_commitments(self) -> list[str]:
+        """All registered commitments (recipients + donors) — for the binding check."""
+        return [r["commitment"] for r in self.read_registrations()]
+
+    def active_recipient_commitments(self) -> list[str]:
+        """Currently-active recipient commitments (registered, not erased)."""
+        erased = {e["commitment"] for e in self.read_erasures()}
+        return [r["commitment"] for r in self.read_registrations()
+                if r["kind"] == KIND_RECIPIENT and r["commitment"] not in erased]
 
     def read_decisions(self) -> list[dict]:
         logs = self.contract.events.DecisionLogged().get_logs(from_block=0)
         out = []
         for e in logs:
             a = e["args"]
-            out.append(
-                {
-                    "decisionId": int(a["decisionId"]),
-                    "donorCommitment": _to_0x(a["donorCommitment"]),
-                    "rankingHash": _to_0x(a["rankingHash"]),
-                    "policyVersion": a["policyVersion"],
-                    "rankedRecipientCommitments": [
-                        _to_0x(x) for x in a["rankedRecipientCommitments"]
-                    ],
-                    "by": a["by"],
-                }
-            )
+            out.append({
+                "decisionId": int(a["decisionId"]),
+                "donorCommitment": _to_0x(a["donorCommitment"]),
+                "rankingHash": _to_0x(a["rankingHash"]),
+                "policyVersion": a["policyVersion"],
+                "candidatePool": [_to_0x(x) for x in a["candidatePool"]],
+                "rankedRecipientCommitments": [_to_0x(x) for x in a["rankedEligible"]],
+                "by": a["by"],
+                "block": int(e["blockNumber"]),
+            })
         out.sort(key=lambda d: d["decisionId"])
         return out
-
-    def read_commitments(self) -> list[str]:
-        """The on-chain set of Registered commitments — the population an auditor
-        binds the revealed records against (closes the substitution attack)."""
-        logs = self.contract.events.Registered().get_logs(from_block=0)
-        return [_to_0x(e["args"]["commitment"]) for e in logs]

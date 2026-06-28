@@ -1,0 +1,43 @@
+{
+  "note": "Frozen decision ranking_hash vectors (binds donor + policy + candidate pool + ranking). Python (decision.ranking_hash) and JS (canon.rankingHash) must reproduce every hash. See docs/decisions.md D-020.",
+  "cases": [
+    {
+      "name": "basic",
+      "donor_commitment": "0xd1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1",
+      "candidate_pool": [
+        "0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+        "0xa2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2",
+        "0xa3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"
+      ],
+      "ranked_recipient_commitments": [
+        "0xa3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3",
+        "0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1"
+      ],
+      "policy_version": "kidney_v1",
+      "ranking_hash": "0x5d6f4c102e5710c634420d14de3e74f03b21808e4c16826b1c0bc8d93d84cf81"
+    },
+    {
+      "name": "all_gated_empty_ranking",
+      "donor_commitment": "0xd2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2",
+      "candidate_pool": [
+        "0xb1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1",
+        "0xb2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2"
+      ],
+      "ranked_recipient_commitments": [],
+      "policy_version": "kidney_v1",
+      "ranking_hash": "0xbef9322d3c7f8604edd436f87ca63c537fae83c7acf463184cf96d6edf04d496"
+    },
+    {
+      "name": "single",
+      "donor_commitment": "0xd3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3",
+      "candidate_pool": [
+        "0xc1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1"
+      ],
+      "ranked_recipient_commitments": [
+        "0xc1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1"
+      ],
+      "policy_version": "kidney_v1",
+      "ranking_hash": "0xbc7a35f6f5bbfd9bca6c22cb8585f3685188d6b03d9dddcbe9fda293df7c2701"
+    }
+  ]
+}
