@@ -14,15 +14,22 @@ const keccakHex = sha3.keccak256; // Ethereum Keccak-256, NOT NIST sha3_256.
 
 export const CANONICALIZATION_VERSION = "canon-v1";
 
-function assertNoFloat(value, path = "$") {
+// canon-v1: numbers must be SAFE integers. Number.isSafeInteger rejects both
+// fractional values and integers beyond +/-(2^53-1) — the magnitude past which a
+// JS double silently loses precision and would diverge from Python's exact int.
+// (booleans are typeof "boolean", null is typeof "object" && falsy — both skipped.)
+function assertCanonValid(value, path = "$") {
   if (typeof value === "number") {
-    if (!Number.isInteger(value)) {
-      throw new Error(`float found at ${path}: ${value} (integer-only required)`);
+    if (!Number.isSafeInteger(value)) {
+      throw new Error(
+        `number at ${path}: ${value} is not a canon-v1 safe integer ` +
+          `(integer-only, within +/-${Number.MAX_SAFE_INTEGER})`
+      );
     }
   } else if (Array.isArray(value)) {
-    value.forEach((v, i) => assertNoFloat(v, `${path}[${i}]`));
+    value.forEach((v, i) => assertCanonValid(v, `${path}[${i}]`));
   } else if (value && typeof value === "object") {
-    for (const k of Object.keys(value)) assertNoFloat(value[k], `${path}.${k}`);
+    for (const k of Object.keys(value)) assertCanonValid(value[k], `${path}.${k}`);
   }
 }
 
@@ -39,7 +46,7 @@ function sortDeep(value) {
 }
 
 export function canonicalJson(record) {
-  assertNoFloat(record);
+  assertCanonValid(record);
   // Default JSON.stringify has no insignificant whitespace and leaves non-ASCII
   // as raw UTF-8 — matching Python json.dumps(separators=(",",":"),
   // ensure_ascii=False).

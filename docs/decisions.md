@@ -6,6 +6,21 @@
 
 ---
 
+## D-014 · 2026-06-28 · accepted — canon-v1 integer/float hardening + frozen-vector matrix
+**Context.** Adversarial review found two latent Python↔JS divergences the single frozen vector never
+exercised: integers > 2^53 (Python keeps precision, JS rounds the double) and the `2.0`/`2` asymmetry
+(Python rejects the float type, JS can't see it). **Decision.** (1) Bound canon-v1 integers to the JS
+safe range `±(2^53-1)`; both ports reject out-of-range (encode bigger values as strings). (2) Keep
+Python's strict float-*type* rejection; document that JS validates by *value* (`Number.isSafeInteger`)
+— an input-validation asymmetry with **no output divergence** (every jointly-accepted value
+canonicalizes identically). (3) Expand frozen vectors from 1 to **7** (large/negative ints, key
+ordering, unicode incl. emoji, nested empties, scalars, deep nesting). **Kept the label `canon-v1`**:
+no previously-valid input's serialization changed (the R001 commitment is byte-identical), so no
+on-chain data is invalidated and no version bump is warranted — this corrects an under-specification
+rather than redefining the format. **Consequence.** Python and JS now reproduce the full matrix
+byte-for-byte; the determinism foundation is pinned by tests, not merely asserted. *(From critique #5 /
+review Group B.)*
+
 ## D-013 · 2026-06-28 · RESOLVED (2026-06-28) — Phase 1 verifier now binds /reveal to on-chain registrations
 **Resolution.** Fixed in Phase 1 scope, no contract change: both verifiers now read the on-chain
 `Registered` set (`/commitments`) and require every revealed record to open to a commitment that was

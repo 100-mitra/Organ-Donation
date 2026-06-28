@@ -18,6 +18,18 @@ Defines how a **record** (a JSON object) is turned into:
   *rejected* (raise), not coerced. Float text formatting differs across languages/platforms and
   would silently break recompute. Money/ratios are represented as scaled integers (e.g. CPRA as
   an integer 0–100, points as integers).
+- **Integers MUST be within `[-(2^53-1), 2^53-1]`** (i.e. `±9007199254740991`,
+  `Number.MAX_SAFE_INTEGER`). Beyond this a JS `number` is a double that silently loses precision
+  (and may switch to exponent form), so it would diverge from Python's exact `int`. Both ports
+  reject out-of-range integers. Need a bigger value? Encode it as a **string**.
+- **Float *type* vs integer *value* (the `2.0`/`2` rule).** Python additionally rejects the float
+  *type* outright (so `2.0` raises), as producer-side discipline. JavaScript cannot distinguish
+  `2.0` from `2` at runtime, so it validates by *value*: `Number.isSafeInteger` accepts integer
+  values and rejects fractional ones. This is an input-validation asymmetry only — **there is no
+  output divergence**: every value both ports accept canonicalizes to identical bytes (a fractional
+  value is rejected by both; an integer value serializes the same in both). Producers must supply
+  integer types; the engine (Python) is the stricter gate and is the only thing that mints
+  commitments.
 - **Object keys are strings**, and in `canon-v1` are restricted to **ASCII**. (Rationale:
   Python sorts keys by Unicode code point; JS `Array.prototype.sort` sorts by UTF-16 code unit.
   These agree for all ASCII keys, so restricting keys to ASCII removes the one place the two
@@ -32,13 +44,15 @@ Defines how a **record** (a JSON object) is turned into:
    canonicalization never reorders array elements.
 4. **Strings** are emitted as raw UTF-8 (no `\uXXXX` escaping of non-ASCII), matching JS
    `JSON.stringify`. Only the JSON-mandatory escapes (`"`, `\`, control chars) are applied.
-5. **Integers** are bare decimal, no leading zeros, `-` only for negatives.
+5. **Integers** are bare decimal, no leading zeros, `-` only for negatives, and within the safe
+   range above (no exponent form ever).
 6. **Booleans / null** → `true` / `false` / `null`.
 7. Output is then **UTF-8 encoded** to bytes.
 
 Reference impl: `engine.commitments.canonical_json` —
-`json.dumps(record, sort_keys=True, separators=(",", ":"), ensure_ascii=False)` after a
-recursive float check.
+`json.dumps(record, sort_keys=True, separators=(",", ":"), ensure_ascii=False)` after
+`_assert_canon_valid` (rejects floats, out-of-range integers, and non-string keys). The JS twin is
+`web/src/canon.js` (`assertCanonValid` + `JSON.stringify(sortDeep(...))`).
 
 > Equivalent to [RFC 8785 JSON Canonicalization Scheme](https://www.rfc-editor.org/rfc/rfc8785)
 > *restricted to the integer-only subset* (we deliberately exclude RFC 8785's float/ECMAScript

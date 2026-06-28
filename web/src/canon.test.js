@@ -30,3 +30,20 @@ describe("canon-v1 JS port reproduces the frozen Python vectors", () => {
     });
   }
 });
+
+describe("canon-v1 integer/float bound (matches engine/commitments.py)", () => {
+  it("accepts the max safe integer", () => {
+    expect(() => canonicalJson({ x: Number.MAX_SAFE_INTEGER })).not.toThrow();
+    expect(() => canonicalJson({ x: -Number.MAX_SAFE_INTEGER })).not.toThrow();
+  });
+  it("rejects integers beyond the safe range", () => {
+    expect(() => canonicalJson({ x: Number.MAX_SAFE_INTEGER + 1 })).toThrow();
+  });
+  it("rejects fractional numbers", () => {
+    expect(() => canonicalJson({ x: 2.5 })).toThrow();
+    expect(() => canonicalJson({ nested: { a: [1, 2.5] } })).toThrow();
+  });
+  it("accepts booleans and null", () => {
+    expect(() => canonicalJson({ t: true, f: false, n: null })).not.toThrow();
+  });
+});
