@@ -52,9 +52,10 @@ def main() -> None:
         rev = c.get("/reveal").raise_for_status().json()["revealed"]
         registered = c.get("/commitments").raise_for_status().json()["registered"]
         reg = c.get("/registrations").raise_for_status().json()
+        policy = c.get("/policy").raise_for_status().json()  # recompute against the SAME policy bytes
 
     def verify(oc, rv=rev, cs=registered):
-        return verify_decision(oc, rv, cs, None, reg["registrations"], reg["erasures"])
+        return verify_decision(oc, rv, cs, policy, reg["registrations"], reg["erasures"])
 
     # ----- POSITIVE -----
     ok, checks = verify(onchain)

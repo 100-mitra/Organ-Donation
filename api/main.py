@@ -8,9 +8,10 @@
 """
 from __future__ import annotations
 
+import os
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -35,6 +36,22 @@ def chain() -> Chain:
     return _chain
 
 
+def require_auth(authorization: str | None = Header(default=None)) -> None:
+    """Access control for PII disclosure (/reveal) and allocator writes. Records +
+    salts genuinely must reach an *authorized* auditor for recompute (CLAUDE.md §10,
+    D-003), so this is an intentional, gated disclosure — never public in production.
+    Demo mode (ALLOCATOR_TOKEN unset) runs open on SYNTHETIC data; set the token to
+    require `Authorization: Bearer <token>`. See docs/threat-model.md (D-022)."""
+    token = os.environ.get("ALLOCATOR_TOKEN")
+    if not token:
+        return  # demo mode — open (synthetic data only)
+    if authorization != f"Bearer {token}":
+        raise HTTPException(401, "missing or invalid allocator token")
+
+
+AUTH = [Depends(require_auth)]
+
+
 def _sorted_pool(commitments: list[str]) -> list[str]:
     """Strictly ascending by uint256 — matches the contract's pool ordering."""
     return sorted(commitments, key=lambda c: int(c, 16))
@@ -47,7 +64,8 @@ class RegisterBody(BaseModel):
 
 @app.get("/health")
 def health() -> dict:
-    info: dict[str, Any] = {"ok": True, "registered": len(store.reveal())}
+    info: dict[str, Any] = {"ok": True, "registered": len(store.reveal()),
+                            "auth_enabled": bool(os.environ.get("ALLOCATOR_TOKEN"))}
     try:
         c = chain()
         info["chain_connected"] = c.is_connected()
@@ -59,7 +77,7 @@ def health() -> dict:
     return info
 
 
-@app.post("/register")
+@app.post("/register", dependencies=AUTH)
 def register(body: RegisterBody) -> dict:
     if body.kind not in ("recipient", "donor"):
         raise HTTPException(400, "kind must be 'recipient' or 'donor'")
@@ -70,7 +88,7 @@ def register(body: RegisterBody) -> dict:
     return {"id": entry["id"], "kind": body.kind, "commitment": entry["commitment"], "tx": tx}
 
 
-@app.post("/seed")
+@app.post("/seed", dependencies=AUTH)
 def seed() -> dict:
     # Reset the on-chain active recipient set (erase any leftovers) so the next
     # match's pool equals exactly this seed's pool. Old decisions still verify —
@@ -90,7 +108,7 @@ def seed() -> dict:
             "recipients": out, "reset_erased": len(reset)}
 
 
-@app.post("/match")
+@app.post("/match", dependencies=AUTH)
 def match() -> dict:
     recips = store.recipients()
     if not recips:
@@ -121,7 +139,7 @@ def match() -> dict:
     }
 
 
-@app.post("/erase/{rid}")
+@app.post("/erase/{rid}", dependencies=AUTH)
 def erase(rid: str) -> dict:
     """Destroy the off-chain salt + record, then mark erased on-chain (§14)."""
     entry = store.get(rid)
@@ -157,7 +175,7 @@ def policy() -> dict:
     return load_policy(POLICY_VERSION)
 
 
-@app.get("/reveal")
+@app.get("/reveal", dependencies=AUTH)
 def reveal() -> dict:
     """Records + salts an auditor recomputes from (erased records are absent)."""
     return {"revealed": store.reveal(), "policyVersion": POLICY_VERSION}

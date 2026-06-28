@@ -6,6 +6,40 @@
 
 ---
 
+## D-022 · 2026-06-28 · accepted — /reveal is an intentional, access-controlled PII disclosure
+**Context.** The verifiable-recompute model *requires* an authorized auditor to obtain records + salts
+to recompute (CLAUDE.md §10, [[d-003]]); but the encrypted-at-rest store is undone if `/reveal` hands
+plaintext to anyone. (Phase 3 adversarial review, confirmed.) **Decision.** `/reveal` (and the allocator
+write endpoints) are gated by an `ALLOCATOR_TOKEN` (`Authorization: Bearer`); unset = demo mode, open on
+**synthetic data only**; set = enforced (401 otherwise). Documented in [`threat-model.md`](threat-model.md)
+as a deliberate, gated disclosure that **must never be public in production** (and CORS narrowed there).
+**Consequence.** The privacy story is coherent: encrypted at rest + disclosed only to an authorized
+auditor. Full production auth/identity + CORS hardening remains a deployment concern (LATER.md).
+
+## D-021 · 2026-06-28 · accepted — verifier requires the fetched policy (no silent disk fallback)
+**Context.** The Phase 3 review found a Python↔JS divergence: with `policy=None`, the Python verifier
+silently loaded the policy from local disk and passed, while the JS verifier (no filesystem) skipped the
+recompute and failed — opposite verdicts on identical input, breaking lockstep. **Decision.** Drop the
+Python disk fallback; **both** ports require the policy to be passed in (the auditor fetches it via
+`/policy`, exactly as the browser does), so they prove the SAME policy bytes were used and behave
+identically on `policy=None` (recompute fails). `scripts/e2e.py` now fetches `/policy`. **Consequence.**
+Byte-for-byte lockstep restored; the auditor recomputes against the decision's policy, not local disk.
+*(Standing rule [[d-004]].)*
+
+## D-020 · 2026-06-28 · accepted — Phase 3 real ledger: pool-completeness, encrypted store, erasure
+**Context.** The real audit ledger had to close the carried-forward subset-drop gap and add privacy.
+**Decisions.** (1) **AuditLedger** gained a recipient/donor registration lifecycle + per-recipient
+erasure, and `logDecision` ENFORCES `candidatePool == active recipient set` (length == count + strictly
+ascending + all active) — so a registered recipient cannot be dropped from a decision (closes D-015
+on-chain). (2) The verifier (both ports) **independently reconstructs** the active set from the
+registration/erasure events (block-aware) and checks `pool == active` + `revealed == pool`, not trusting
+the contract. (3) `ranking_hash` now binds the pool (frozen `decision_hash_vectors.json`, both ports).
+(4) Off-chain PII is **encrypted at rest** (AES-256-GCM); `erase()` destroys salt+ciphertext →
+commitment unlinkable (§14). (5) `/seed` resets the on-chain active set so each match's pool is exact;
+old decisions still verify (block-aware reconstruction). **Consequence.** Subset-drop is genuinely
+closed (contract + independent verifier), parity preserved, privacy added — confirmed by the Phase 3
+adversarial review ("holds rigorously on-chain"; crypto core "sound").
+
 ## D-019 · 2026-06-28 · accepted — boolean_bonus uses STRICT identity (Python/JS truthiness divergence)
 **Context.** The Phase 2 adversarial review found a real cross-language parity bug: `extract_features`
 coerced `prior_living_donor`/`urgent` with Python `bool()` / JS `Boolean()`, which **disagree on empty
@@ -54,7 +88,7 @@ that the verifier (Python + JS) must reproduce identically. **Decisions.**
 **Consequence.** The CAS ranking is fully recomputable from the committed records + policy, by an
 independent reimplementation, with integer-only arithmetic. JS parity is enforced by frozen CAS vectors (next).
 
-## D-015 · 2026-06-28 · partially resolved — kind-mislabel FIXED; subset-drop deferred to Phase 3
+## D-015 · 2026-06-28 · RESOLVED (2026-06-28) — kind-mislabel FIXED (Phase 1); subset-drop CLOSED (Phase 3)
 **Context.** Re-running the adversarial workflow on the D-013 fix confirmed the binding closes the
 *fabrication/substitution* attack (a revealed record never Registered is rejected — proven by N2), but
 it only enforces **revealed ⊆ registered**, not coverage. Two residual attacks were found:
@@ -73,7 +107,11 @@ it only enforces **revealed ⊆ registered**, not coverage. Two residual attacks
   needs registration scoped per match-run — a registration-epoch notion or logging the pool in the
   decision (a **contract change**, beyond the "AuditLedger unchanged" constraint). Tracked for Phase 3
   ("real audit ledger"), where persistent, scoped registration lands.
-**Status.** kind-mislabel resolved; subset-drop documented + deferred. *(From re-verification of D-013.)*
+**Status.** kind-mislabel resolved (Phase 1). **subset-drop CLOSED in Phase 3 ([[d-020]]):** the contract
+enforces `candidatePool == active recipient set` and the verifier independently reconstructs that set from
+the event log — a registered recipient can no longer be silently dropped. The Phase 3 adversarial review
+confirmed it "holds rigorously on-chain." Proven by the Hardhat incomplete-pool rejection + live e2e N3
+(contract) + the verifier completeness check (both languages). *(Originated in re-verification of D-013.)*
 
 ## D-014 · 2026-06-28 · accepted — canon-v1 integer/float hardening + frozen-vector matrix
 **Context.** Adversarial review found two latent Python↔JS divergences the single frozen vector never

@@ -142,3 +142,12 @@ def test_rejects_a_reordered_ranking():
     onchain["rankingHash"] = ranking_hash(onchain["donorCommitment"], onchain["candidatePool"], rc, VERSION)
     ok, _ = verify_decision(onchain, revealed, registered, P, regs, eras)
     assert ok is False
+
+
+def test_policy_none_fails_recompute_matching_js_no_disk_fallback():
+    # No silent disk fallback — a None policy fails the recompute identically in
+    # Python and JS (parity, D-021).
+    onchain, revealed, registered, regs, eras = _build()
+    ok, checks = verify_decision(onchain, revealed, registered, None, regs, eras)
+    assert ok is False
+    assert next(c for c in checks if c["name"].startswith("recomputed CAS ranking"))["ok"] is False

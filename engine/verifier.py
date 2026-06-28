@@ -13,7 +13,6 @@ from __future__ import annotations
 
 from engine.commitments import commit
 from engine.decision import ranking_hash
-from engine.policy import load_policy
 from engine.scoring import rank
 
 KNOWN_KINDS = ("recipient", "donor")
@@ -40,9 +39,12 @@ def verify_decision(
     registrations: list[dict] | None = None,
     erasures: list[dict] | None = None,
 ) -> tuple[bool, list[dict]]:
-    """Return (all_ok, checks)."""
-    if policy is None:
-        policy = load_policy(onchain.get("policyVersion", "kidney_v1"))
+    """Return (all_ok, checks).
+
+    `policy` is REQUIRED to recompute — the caller fetches the versioned policy (as
+    the browser does over /policy) and passes it, so both ports prove the SAME policy
+    bytes were used. A None policy fails the recompute identically in Python and JS
+    (no silent disk fallback — that would break lockstep, D-021)."""
     registered = set(registered_commitments)
     pool = onchain.get("candidatePool", [])
     checks: list[dict] = []
@@ -77,7 +79,7 @@ def verify_decision(
     # 6. recompute the CAS ranking over the revealed pool and compare.
     recomputed: list[str] = []
     ranked_ok = coverage_ok = False
-    if one_donor:
+    if one_donor and policy is not None:  # matches web/src/verify.js (oneDonor && policy)
         try:
             by_id = {e["record"]["id"]: e for e in recips}
             ranked_eligible, _ = rank(
