@@ -19,6 +19,28 @@ version: kidney_v1
 canonicalization: canon-v1      # scoring + commitments share one serialization (docs/canonicalization.md)
 
 # -----------------------------------------------------------------------------
+# Reference data: region -> zone. Drives the `proximity` distance_band feature
+# (0 same-region, 1 same-zone, 2 otherwise). MUST be in the versioned policy
+# because it affects the ranking — anything the score depends on is committed.
+# -----------------------------------------------------------------------------
+region_zones:
+  TN: S
+  KA: S
+  KL: S
+  AP: S
+  MH: W
+  GJ: W
+  RJ: W
+  DL: N
+  PB: N
+  UP: N
+  WB: E
+  BR: E
+  OD: E
+  MP: C
+  AS: NE
+
+# -----------------------------------------------------------------------------
 # Step A — eligibility HARD GATES. Failing ANY gate excludes the candidate from
 # scoring entirely (excluded, not merely down-ranked).
 # -----------------------------------------------------------------------------

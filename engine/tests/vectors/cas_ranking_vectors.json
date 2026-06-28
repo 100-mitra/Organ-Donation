@@ -1,0 +1,942 @@
+{
+  "policy_version": "kidney_v1",
+  "note": "Frozen CAS-ranking vectors. Python (engine) and JS (cas.js) MUST reproduce each case's `scored` (eligibility + cas + per-attribute points) and `ranking`. Regenerate only deliberately. See docs/decisions.md D-018.",
+  "cases": [
+    {
+      "name": "demo_pool",
+      "decision_seed": "0xabababababababababababababababababababababababababababababababab",
+      "donor": {
+        "id": "D1",
+        "abo": "O",
+        "hla": {
+          "A": [
+            1,
+            2
+          ],
+          "B": [
+            7,
+            8
+          ],
+          "DR": [
+            4,
+            15
+          ]
+        },
+        "age": 35,
+        "region": "TN",
+        "recovered_at_epoch_day": 20000
+      },
+      "recipients": [
+        {
+          "id": "R1",
+          "abo": "O",
+          "hla": {
+            "A": [
+              1,
+              2
+            ],
+            "B": [
+              7,
+              8
+            ],
+            "DR": [
+              4,
+              15
+            ]
+          },
+          "age": 50,
+          "unacceptable_antigens": [],
+          "cpra": 10,
+          "dialysis_start_epoch_day": 13000,
+          "prior_living_donor": false,
+          "region": "TN",
+          "urgent": false
+        },
+        {
+          "id": "R2",
+          "abo": "A",
+          "hla": {
+            "A": [
+              1,
+              3
+            ],
+            "B": [
+              7,
+              9
+            ],
+            "DR": [
+              4,
+              11
+            ]
+          },
+          "age": 12,
+          "unacceptable_antigens": [],
+          "cpra": 0,
+          "dialysis_start_epoch_day": 18500,
+          "prior_living_donor": false,
+          "region": "KA",
+          "urgent": false
+        },
+        {
+          "id": "R3",
+          "abo": "B",
+          "hla": {
+            "A": [
+              2,
+              5
+            ],
+            "B": [
+              8,
+              12
+            ],
+            "DR": [
+              15,
+              7
+            ]
+          },
+          "age": 40,
+          "unacceptable_antigens": [],
+          "cpra": 98,
+          "dialysis_start_epoch_day": 17000,
+          "prior_living_donor": true,
+          "region": "MH",
+          "urgent": false
+        },
+        {
+          "id": "R4",
+          "abo": "O",
+          "hla": {
+            "A": [
+              1,
+              2
+            ],
+            "B": [
+              7,
+              8
+            ],
+            "DR": [
+              4,
+              15
+            ]
+          },
+          "age": 45,
+          "unacceptable_antigens": [
+            7
+          ],
+          "cpra": 50,
+          "dialysis_start_epoch_day": 15000,
+          "prior_living_donor": false,
+          "region": "DL",
+          "urgent": false
+        },
+        {
+          "id": "R5",
+          "abo": "O",
+          "hla": {
+            "A": [
+              1,
+              2
+            ],
+            "B": [
+              7,
+              8
+            ],
+            "DR": [
+              4,
+              15
+            ]
+          },
+          "age": 95,
+          "unacceptable_antigens": [],
+          "cpra": 0,
+          "dialysis_start_epoch_day": 14000,
+          "prior_living_donor": false,
+          "region": "AP",
+          "urgent": false
+        }
+      ],
+      "expected": {
+        "scored": [
+          {
+            "id": "R1",
+            "eligible": true,
+            "cas": 5000,
+            "points": {
+              "hla_match": 100,
+              "longevity_epts": 50,
+              "medical_urgency": 0,
+              "pediatric": 0,
+              "prior_living_donor": 0,
+              "proximity": 100,
+              "sensitization_cpra": 0,
+              "waiting_time": 100
+            }
+          },
+          {
+            "id": "R2",
+            "eligible": true,
+            "cas": 3760,
+            "points": {
+              "hla_match": 52,
+              "longevity_epts": 88,
+              "medical_urgency": 0,
+              "pediatric": 100,
+              "prior_living_donor": 0,
+              "proximity": 50,
+              "sensitization_cpra": 0,
+              "waiting_time": 41
+            }
+          },
+          {
+            "id": "R3",
+            "eligible": true,
+            "cas": 6540,
+            "points": {
+              "hla_match": 52,
+              "longevity_epts": 60,
+              "medical_urgency": 0,
+              "pediatric": 0,
+              "prior_living_donor": 100,
+              "proximity": 0,
+              "sensitization_cpra": 90,
+              "waiting_time": 82
+            }
+          },
+          {
+            "id": "R4",
+            "eligible": false,
+            "cas": null,
+            "points": null
+          },
+          {
+            "id": "R5",
+            "eligible": false,
+            "cas": null,
+            "points": null
+          }
+        ],
+        "ranking": [
+          "R3",
+          "R1",
+          "R2"
+        ]
+      }
+    },
+    {
+      "name": "synthetic_8",
+      "decision_seed": "0xabababababababababababababababababababababababababababababababab",
+      "donor": {
+        "id": "D1",
+        "abo": "O",
+        "hla": {
+          "A": [
+            1,
+            24
+          ],
+          "B": [
+            15,
+            51
+          ],
+          "DR": [
+            3,
+            15
+          ]
+        },
+        "age": 20,
+        "region": "RJ",
+        "recovered_at_epoch_day": 20000
+      },
+      "recipients": [
+        {
+          "id": "R1",
+          "abo": "O",
+          "hla": {
+            "A": [
+              26,
+              33
+            ],
+            "B": [
+              7,
+              8
+            ],
+            "DR": [
+              4,
+              17
+            ]
+          },
+          "age": 74,
+          "unacceptable_antigens": [],
+          "cpra": 0,
+          "dialysis_start_epoch_day": 16734,
+          "prior_living_donor": false,
+          "region": "KL",
+          "urgent": true
+        },
+        {
+          "id": "R2",
+          "abo": "O",
+          "hla": {
+            "A": [
+              1,
+              33
+            ],
+            "B": [
+              7,
+              15
+            ],
+            "DR": [
+              1,
+              17
+            ]
+          },
+          "age": 8,
+          "unacceptable_antigens": [],
+          "cpra": 0,
+          "dialysis_start_epoch_day": 14759,
+          "prior_living_donor": false,
+          "region": "KL",
+          "urgent": false
+        },
+        {
+          "id": "R3",
+          "abo": "AB",
+          "hla": {
+            "A": [
+              24,
+              33
+            ],
+            "B": [
+              15,
+              57
+            ],
+            "DR": [
+              15,
+              17
+            ]
+          },
+          "age": 7,
+          "unacceptable_antigens": [],
+          "cpra": 0,
+          "dialysis_start_epoch_day": 16499,
+          "prior_living_donor": false,
+          "region": "OD",
+          "urgent": false
+        },
+        {
+          "id": "R4",
+          "abo": "B",
+          "hla": {
+            "A": [
+              26,
+              33
+            ],
+            "B": [
+              40,
+              57
+            ],
+            "DR": [
+              4,
+              15
+            ]
+          },
+          "age": 68,
+          "unacceptable_antigens": [],
+          "cpra": 98,
+          "dialysis_start_epoch_day": 14260,
+          "prior_living_donor": false,
+          "region": "WB",
+          "urgent": false
+        },
+        {
+          "id": "R5",
+          "abo": "O",
+          "hla": {
+            "A": [
+              24,
+              26
+            ],
+            "B": [
+              7,
+              51
+            ],
+            "DR": [
+              7,
+              17
+            ]
+          },
+          "age": 46,
+          "unacceptable_antigens": [
+            44
+          ],
+          "cpra": 100,
+          "dialysis_start_epoch_day": 14133,
+          "prior_living_donor": false,
+          "region": "KA",
+          "urgent": false
+        },
+        {
+          "id": "R6",
+          "abo": "A",
+          "hla": {
+            "A": [
+              2,
+              26
+            ],
+            "B": [
+              40,
+              51
+            ],
+            "DR": [
+              1,
+              13
+            ]
+          },
+          "age": 39,
+          "unacceptable_antigens": [],
+          "cpra": 0,
+          "dialysis_start_epoch_day": 18053,
+          "prior_living_donor": false,
+          "region": "WB",
+          "urgent": false
+        },
+        {
+          "id": "R7",
+          "abo": "O",
+          "hla": {
+            "A": [
+              3,
+              24
+            ],
+            "B": [
+              35,
+              57
+            ],
+            "DR": [
+              1,
+              17
+            ]
+          },
+          "age": 4,
+          "unacceptable_antigens": [],
+          "cpra": 0,
+          "dialysis_start_epoch_day": 15103,
+          "prior_living_donor": false,
+          "region": "TN",
+          "urgent": false
+        },
+        {
+          "id": "R8",
+          "abo": "O",
+          "hla": {
+            "A": [
+              26,
+              33
+            ],
+            "B": [
+              7,
+              51
+            ],
+            "DR": [
+              3,
+              11
+            ]
+          },
+          "age": 11,
+          "unacceptable_antigens": [],
+          "cpra": 0,
+          "dialysis_start_epoch_day": 18180,
+          "prior_living_donor": false,
+          "region": "KA",
+          "urgent": false
+        }
+      ],
+      "expected": {
+        "scored": [
+          {
+            "id": "R1",
+            "eligible": true,
+            "cas": 2730,
+            "points": {
+              "hla_match": 4,
+              "longevity_epts": 26,
+              "medical_urgency": 100,
+              "pediatric": 0,
+              "prior_living_donor": 0,
+              "proximity": 0,
+              "sensitization_cpra": 0,
+              "waiting_time": 89
+            }
+          },
+          {
+            "id": "R2",
+            "eligible": true,
+            "cas": 5040,
+            "points": {
+              "hla_match": 36,
+              "longevity_epts": 92,
+              "medical_urgency": 0,
+              "pediatric": 100,
+              "prior_living_donor": 0,
+              "proximity": 0,
+              "sensitization_cpra": 0,
+              "waiting_time": 100
+            }
+          },
+          {
+            "id": "R3",
+            "eligible": true,
+            "cas": 5130,
+            "points": {
+              "hla_match": 52,
+              "longevity_epts": 93,
+              "medical_urgency": 0,
+              "pediatric": 100,
+              "prior_living_donor": 0,
+              "proximity": 0,
+              "sensitization_cpra": 0,
+              "waiting_time": 95
+            }
+          },
+          {
+            "id": "R4",
+            "eligible": true,
+            "cas": 5100,
+            "points": {
+              "hla_match": 20,
+              "longevity_epts": 32,
+              "medical_urgency": 0,
+              "pediatric": 0,
+              "prior_living_donor": 0,
+              "proximity": 0,
+              "sensitization_cpra": 90,
+              "waiting_time": 100
+            }
+          },
+          {
+            "id": "R5",
+            "eligible": true,
+            "cas": 5540,
+            "points": {
+              "hla_match": 36,
+              "longevity_epts": 54,
+              "medical_urgency": 0,
+              "pediatric": 0,
+              "prior_living_donor": 0,
+              "proximity": 0,
+              "sensitization_cpra": 100,
+              "waiting_time": 100
+            }
+          },
+          {
+            "id": "R6",
+            "eligible": true,
+            "cas": 1890,
+            "points": {
+              "hla_match": 20,
+              "longevity_epts": 61,
+              "medical_urgency": 0,
+              "pediatric": 0,
+              "prior_living_donor": 0,
+              "proximity": 0,
+              "sensitization_cpra": 0,
+              "waiting_time": 53
+            }
+          },
+          {
+            "id": "R7",
+            "eligible": true,
+            "cas": 4800,
+            "points": {
+              "hla_match": 20,
+              "longevity_epts": 96,
+              "medical_urgency": 0,
+              "pediatric": 100,
+              "prior_living_donor": 0,
+              "proximity": 0,
+              "sensitization_cpra": 0,
+              "waiting_time": 100
+            }
+          },
+          {
+            "id": "R8",
+            "eligible": true,
+            "cas": 3510,
+            "points": {
+              "hla_match": 36,
+              "longevity_epts": 89,
+              "medical_urgency": 0,
+              "pediatric": 100,
+              "prior_living_donor": 0,
+              "proximity": 0,
+              "sensitization_cpra": 0,
+              "waiting_time": 49
+            }
+          }
+        ],
+        "ranking": [
+          "R5",
+          "R3",
+          "R4",
+          "R2",
+          "R7",
+          "R8",
+          "R1",
+          "R6"
+        ]
+      }
+    },
+    {
+      "name": "tie_break_keccak",
+      "decision_seed": "0xabababababababababababababababababababababababababababababababab",
+      "donor": {
+        "id": "D1",
+        "abo": "O",
+        "hla": {
+          "A": [
+            1,
+            2
+          ],
+          "B": [
+            7,
+            8
+          ],
+          "DR": [
+            4,
+            15
+          ]
+        },
+        "age": 40,
+        "region": "TN",
+        "recovered_at_epoch_day": 20000
+      },
+      "recipients": [
+        {
+          "abo": "O",
+          "hla": {
+            "A": [
+              1,
+              2
+            ],
+            "B": [
+              7,
+              8
+            ],
+            "DR": [
+              4,
+              15
+            ]
+          },
+          "age": 45,
+          "unacceptable_antigens": [],
+          "cpra": 0,
+          "dialysis_start_epoch_day": 16000,
+          "prior_living_donor": false,
+          "region": "TN",
+          "urgent": false,
+          "id": "RA"
+        },
+        {
+          "abo": "O",
+          "hla": {
+            "A": [
+              1,
+              2
+            ],
+            "B": [
+              7,
+              8
+            ],
+            "DR": [
+              4,
+              15
+            ]
+          },
+          "age": 45,
+          "unacceptable_antigens": [],
+          "cpra": 0,
+          "dialysis_start_epoch_day": 16000,
+          "prior_living_donor": false,
+          "region": "TN",
+          "urgent": false,
+          "id": "RB"
+        },
+        {
+          "abo": "O",
+          "hla": {
+            "A": [
+              1,
+              2
+            ],
+            "B": [
+              7,
+              8
+            ],
+            "DR": [
+              4,
+              15
+            ]
+          },
+          "age": 45,
+          "unacceptable_antigens": [],
+          "cpra": 0,
+          "dialysis_start_epoch_day": 16000,
+          "prior_living_donor": false,
+          "region": "TN",
+          "urgent": false,
+          "id": "RC"
+        }
+      ],
+      "expected": {
+        "scored": [
+          {
+            "id": "RA",
+            "eligible": true,
+            "cas": 5000,
+            "points": {
+              "hla_match": 100,
+              "longevity_epts": 55,
+              "medical_urgency": 0,
+              "pediatric": 0,
+              "prior_living_donor": 0,
+              "proximity": 100,
+              "sensitization_cpra": 0,
+              "waiting_time": 100
+            }
+          },
+          {
+            "id": "RB",
+            "eligible": true,
+            "cas": 5000,
+            "points": {
+              "hla_match": 100,
+              "longevity_epts": 55,
+              "medical_urgency": 0,
+              "pediatric": 0,
+              "prior_living_donor": 0,
+              "proximity": 100,
+              "sensitization_cpra": 0,
+              "waiting_time": 100
+            }
+          },
+          {
+            "id": "RC",
+            "eligible": true,
+            "cas": 5000,
+            "points": {
+              "hla_match": 100,
+              "longevity_epts": 55,
+              "medical_urgency": 0,
+              "pediatric": 0,
+              "prior_living_donor": 0,
+              "proximity": 100,
+              "sensitization_cpra": 0,
+              "waiting_time": 100
+            }
+          }
+        ],
+        "ranking": [
+          "RC",
+          "RA",
+          "RB"
+        ]
+      }
+    },
+    {
+      "name": "boolean_strictness",
+      "decision_seed": "0xabababababababababababababababababababababababababababababababab",
+      "donor": {
+        "id": "D1",
+        "abo": "O",
+        "hla": {
+          "A": [
+            1,
+            2
+          ],
+          "B": [
+            7,
+            8
+          ],
+          "DR": [
+            4,
+            15
+          ]
+        },
+        "age": 40,
+        "region": "TN",
+        "recovered_at_epoch_day": 20000
+      },
+      "recipients": [
+        {
+          "abo": "O",
+          "hla": {
+            "A": [
+              1,
+              2
+            ],
+            "B": [
+              7,
+              8
+            ],
+            "DR": [
+              4,
+              15
+            ]
+          },
+          "age": 45,
+          "unacceptable_antigens": [],
+          "cpra": 0,
+          "dialysis_start_epoch_day": 16000,
+          "prior_living_donor": true,
+          "region": "TN",
+          "urgent": false,
+          "id": "BT"
+        },
+        {
+          "abo": "O",
+          "hla": {
+            "A": [
+              1,
+              2
+            ],
+            "B": [
+              7,
+              8
+            ],
+            "DR": [
+              4,
+              15
+            ]
+          },
+          "age": 45,
+          "unacceptable_antigens": [],
+          "cpra": 0,
+          "dialysis_start_epoch_day": 16000,
+          "prior_living_donor": false,
+          "region": "TN",
+          "urgent": false,
+          "id": "BF"
+        },
+        {
+          "abo": "O",
+          "hla": {
+            "A": [
+              1,
+              2
+            ],
+            "B": [
+              7,
+              8
+            ],
+            "DR": [
+              4,
+              15
+            ]
+          },
+          "age": 45,
+          "unacceptable_antigens": [],
+          "cpra": 0,
+          "dialysis_start_epoch_day": 16000,
+          "prior_living_donor": [],
+          "region": "TN",
+          "urgent": false,
+          "id": "BE"
+        },
+        {
+          "abo": "O",
+          "hla": {
+            "A": [
+              1,
+              2
+            ],
+            "B": [
+              7,
+              8
+            ],
+            "DR": [
+              4,
+              15
+            ]
+          },
+          "age": 45,
+          "unacceptable_antigens": [],
+          "cpra": 0,
+          "dialysis_start_epoch_day": 16000,
+          "prior_living_donor": false,
+          "region": "TN",
+          "urgent": {},
+          "id": "BU"
+        }
+      ],
+      "expected": {
+        "scored": [
+          {
+            "id": "BT",
+            "eligible": true,
+            "cas": 6500,
+            "points": {
+              "hla_match": 100,
+              "longevity_epts": 55,
+              "medical_urgency": 0,
+              "pediatric": 0,
+              "prior_living_donor": 100,
+              "proximity": 100,
+              "sensitization_cpra": 0,
+              "waiting_time": 100
+            }
+          },
+          {
+            "id": "BF",
+            "eligible": true,
+            "cas": 5000,
+            "points": {
+              "hla_match": 100,
+              "longevity_epts": 55,
+              "medical_urgency": 0,
+              "pediatric": 0,
+              "prior_living_donor": 0,
+              "proximity": 100,
+              "sensitization_cpra": 0,
+              "waiting_time": 100
+            }
+          },
+          {
+            "id": "BE",
+            "eligible": true,
+            "cas": 5000,
+            "points": {
+              "hla_match": 100,
+              "longevity_epts": 55,
+              "medical_urgency": 0,
+              "pediatric": 0,
+              "prior_living_donor": 0,
+              "proximity": 100,
+              "sensitization_cpra": 0,
+              "waiting_time": 100
+            }
+          },
+          {
+            "id": "BU",
+            "eligible": true,
+            "cas": 5000,
+            "points": {
+              "hla_match": 100,
+              "longevity_epts": 55,
+              "medical_urgency": 0,
+              "pediatric": 0,
+              "prior_living_donor": 0,
+              "proximity": 100,
+              "sensitization_cpra": 0,
+              "waiting_time": 100
+            }
+          }
+        ],
+        "ranking": [
+          "BT",
+          "BU",
+          "BF",
+          "BE"
+        ]
+      }
+    }
+  ]
+}

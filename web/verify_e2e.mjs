@@ -11,10 +11,11 @@ async function main() {
   const audit = await fetch(`${API}/audit`).then((r) => r.json());
   const revealed = await fetch(`${API}/reveal`).then((r) => r.json());
   const registered = await fetch(`${API}/commitments`).then((r) => r.json());
+  const policy = await fetch(`${API}/policy`).then((r) => r.json());
 
   const latest = audit.decisions.find((x) => x.decisionId === d.decisionId);
   const reg = registered.registered;
-  const res = verifyDecision(latest, revealed.revealed, reg);
+  const res = verifyDecision(latest, revealed.revealed, reg, policy);
   for (const c of res.checks) console.log(`  ${c.ok ? "[ok]  " : "[FAIL]"} ${c.name}`);
   if (!res.allOk) {
     console.error("FAIL: browser verify path does not match chain");
@@ -23,7 +24,7 @@ async function main() {
 
   // N1: a tampered hash must be rejected (compare is not vacuous).
   const tampered = { ...latest, rankingHash: "0x" + "00".repeat(32) };
-  if (verifyDecision(tampered, revealed.revealed, reg).allOk) {
+  if (verifyDecision(tampered, revealed.revealed, reg, policy).allOk) {
     console.error("FAIL: tampered decision still verified");
     process.exit(1);
   }
@@ -31,7 +32,7 @@ async function main() {
 
   // N2: a decision commitment absent from the Registered set must be rejected (binding).
   const regMissing = reg.filter((c) => c !== latest.rankedRecipientCommitments[0]);
-  if (verifyDecision(latest, revealed.revealed, regMissing).allOk) {
+  if (verifyDecision(latest, revealed.revealed, regMissing, policy).allOk) {
     console.error("FAIL: unregistered/substituted commitment still verified");
     process.exit(1);
   }

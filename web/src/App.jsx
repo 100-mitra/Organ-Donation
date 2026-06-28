@@ -49,9 +49,10 @@ export default function App() {
       const audit = await fetch(`${API}/audit`).then((x) => x.json());
       const revealed = await fetch(`${API}/reveal`).then((x) => x.json());
       const registered = await fetch(`${API}/commitments`).then((x) => x.json());
+      const policy = await fetch(`${API}/policy`).then((x) => x.json());
       const latest = audit.decisions[audit.decisions.length - 1];
       if (!latest) throw new Error("no decision on-chain yet — Match first");
-      const res = verifyDecision(latest, revealed.revealed, registered.registered);
+      const res = verifyDecision(latest, revealed.revealed, registered.registered, policy);
       setVerify({ ...res, decisionId: latest.decisionId });
       say(res.allOk ? `VERIFY PASSED: decision #${latest.decisionId} recompute matches chain` : "VERIFY FAILED");
     });
@@ -60,10 +61,11 @@ export default function App() {
 
   return (
     <div style={{ fontFamily: "system-ui, sans-serif", maxWidth: 820, margin: "32px auto", padding: 16 }}>
-      <h1 style={{ fontSize: 22 }}>Verifiable Allocation — Phase 1 skeleton</h1>
+      <h1 style={{ fontSize: 22 }}>Verifiable Allocation — Phase 2 (CAS)</h1>
       <p style={{ color: "#555" }}>
-        Trivial ranking (waiting time only). The chain proves the logged ranking faithfully executed the
-        published policy; Verify recomputes it <b>in your browser</b> and compares.
+        Full Composite Allocation Score (eligibility gates + integer weighted scoring). The chain proves
+        the logged ranking faithfully executed <code>kidney_v1</code>; Verify recomputes it{" "}
+        <b>in your browser</b> and compares.
       </p>
 
       <div style={{ margin: "16px 0" }}>

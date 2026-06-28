@@ -6,6 +6,54 @@
 
 ---
 
+## D-019 · 2026-06-28 · accepted — boolean_bonus uses STRICT identity (Python/JS truthiness divergence)
+**Context.** The Phase 2 adversarial review found a real cross-language parity bug: `extract_features`
+coerced `prior_living_donor`/`urgent` with Python `bool()` / JS `Boolean()`, which **disagree on empty
+containers** — `bool([])` is `False` (0 pts) but `Boolean([])` is `true` (100 pts). A record with
+`prior_living_donor=[]` (accepted by the `dict[str, Any]` API and canon-v1 valid) gets an *identical
+commitment* in both languages but a **1500-point CAS swing** (weight 15), so the browser verifier would
+disagree with the logged ranking — the exact divergence the thesis forbids; the three original vectors
+(literal true/false) never caught it. **Decision.** `boolean_bonus` now uses **strict identity**
+(`value is True` / `value === true`) so only a literal `True` earns the bonus and both engines agree for
+*every* input; `extract_features` passes the raw value through. Added a `boolean_strictness` frozen
+vector (`[]`/`{}` → treated as false) that both ports must reproduce. **Consequence.** Parity restored
+and locked; a malformed boolean is a deterministic "no bonus" in both languages rather than a silent
+divergence. *(From Phase 2 review; standing rule [[d-004]].)*
+
+## D-018 · 2026-06-28 · accepted — CAS ranking is byte-for-byte parity-locked across Python and JS
+**Context.** The verifiability thesis needs the CAS recompute to be identical in the engine and the
+browser, the same way commitments were locked (D-004/D-011). **Decision.** `web/src/cas.js` is the JS
+twin of `engine/scoring.py` + `compatibility.py` (integer arithmetic; `Math.floor` for the one integer
+division; keccak tie-break via the shared canon-v1 keccak). Frozen `cas_ranking_vectors.json` fixes
+three cases — the demo pool (with gated candidates), an 8-candidate synthetic pool, and a pure
+keccak-tie case (three identical-CAS recipients) — recording each candidate's eligibility + CAS +
+per-attribute points + the eligible ranking. Both `engine/tests/test_cas_vectors.py` and
+`web/src/cas.test.js` must reproduce every case; the browser fetches the policy via a new `/policy`
+endpoint so it interprets the same JSON the engine loads. **Consequence.** Python and JS agreed on every
+vector on the first run — including the keccak tie-break order — so "verifiable" means independently
+reproducible for the full CAS, not just commitments. Standing rule: on divergence, fix the spec, not one
+language ([[d-004]]).
+
+## D-017 · 2026-06-28 · accepted — Phase 2 CAS: derived inputs, tie-break seed, policy-as-JSON, eligible-coverage
+**Context.** Replacing the trivial ranking with the full integer CAS forced several determinism choices
+that the verifier (Python + JS) must reproduce identically. **Decisions.**
+1. **waiting_days is derived, not stored:** `waiting_days = donor.recovered_at_epoch_day −
+   recipient.dialysis_start_epoch_day` (clamped ≥0). Both values live in the committed records, so the
+   verifier needs **no external "as-of" date and no contract change** — a registration-time `waiting_days`
+   snapshot would be wrong (waiting accrues) and an external as-of would need logging.
+2. **Tie-break seed = `keccak256(donor_commitment ‖ recipient_id)`.** The policy's `keccak_seed` tie-break
+   needs a decision id known to the verifier; the donor commitment is on-chain and unique per match, so it
+   is the seed. Reuses canon-v1 keccak (already in both languages).
+3. **Policy ships as derived JSON.** `kidney_v1.yaml` stays the human source; `scripts/gen_policy_json.py`
+   derives `kidney_v1.json`, which **both** the Python engine and the JS verifier load, so they interpret
+   byte-identical rules. `test_policy.py` asserts JSON==YAML. Added `region_zones` to the policy (proximity
+   needs it; anything affecting the score must be in the versioned config). No version bump — kidney_v1 was
+   never logged on-chain (Phase 1 used `skeleton-waiting-time-v0`), so this completes v1 rather than changing it.
+4. **Gates change coverage:** the ranked set is the **eligible** recipients only, so the verifier's coverage
+   check becomes "ranked set == eligible(revealed recipients)" (recompute eligibility, not all-revealed).
+**Consequence.** The CAS ranking is fully recomputable from the committed records + policy, by an
+independent reimplementation, with integer-only arithmetic. JS parity is enforced by frozen CAS vectors (next).
+
 ## D-015 · 2026-06-28 · partially resolved — kind-mislabel FIXED; subset-drop deferred to Phase 3
 **Context.** Re-running the adversarial workflow on the D-013 fix confirmed the binding closes the
 *fabrication/substitution* attack (a revealed record never Registered is rejected — proven by N2), but
