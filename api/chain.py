@@ -96,3 +96,9 @@ class Chain:
             )
         out.sort(key=lambda d: d["decisionId"])
         return out
+
+    def read_commitments(self) -> list[str]:
+        """The on-chain set of Registered commitments — the population an auditor
+        binds the revealed records against (closes the substitution attack)."""
+        logs = self.contract.events.Registered().get_logs(from_block=0)
+        return [_to_0x(e["args"]["commitment"]) for e in logs]

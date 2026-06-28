@@ -135,6 +135,13 @@ def audit() -> dict:
     return {"decisions": chain().read_decisions()}
 
 
+@app.get("/commitments")
+def commitments() -> dict:
+    """The on-chain set of Registered commitments. A verifier binds the revealed
+    records against this set so a substituted/fabricated pool is rejected (D-013)."""
+    return {"registered": chain().read_commitments()}
+
+
 @app.get("/reveal")
 def reveal() -> dict:
     """Records + salts + commitments — the inputs an auditor recomputes from.

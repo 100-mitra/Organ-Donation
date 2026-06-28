@@ -16,12 +16,18 @@ export function rankRecipients(records) {
 
 // onchain: { donorCommitment, rankingHash, policyVersion, rankedRecipientCommitments }
 // revealed: { id: { record, salt, commitment, kind } }
-export function verifyDecision(onchain, revealed) {
+// registeredCommitments: the on-chain Registered set (from GET /commitments)
+export function verifyDecision(onchain, revealed, registeredCommitments = []) {
   const checks = [];
+  const registered = new Set(registeredCommitments);
 
-  // 1. every revealed record's commitment must open to its stored commitment
+  // 1. BINDING (before re-ranking): each revealed record must (a) open to its
+  //    stored commitment and (b) that commitment must have been Registered
+  //    on-chain. A substituted/fabricated record fails (b) (D-013).
   for (const [id, e] of Object.entries(revealed)) {
-    checks.push({ name: `commitment opens: ${id}`, ok: commit(e.record, e.salt) === e.commitment });
+    const opens = commit(e.record, e.salt) === e.commitment;
+    const isRegistered = registered.has(e.commitment);
+    checks.push({ name: `revealed ${id}: opens + registered on-chain`, ok: opens && isRegistered });
   }
 
   // 2. independently re-rank the revealed recipients

@@ -6,7 +6,15 @@
 
 ---
 
-## D-013 · 2026-06-28 · open — Phase 1 verifier does not yet bind /reveal to on-chain registrations
+## D-013 · 2026-06-28 · RESOLVED (2026-06-28) — Phase 1 verifier now binds /reveal to on-chain registrations
+**Resolution.** Fixed in Phase 1 scope, no contract change: both verifiers now read the on-chain
+`Registered` set (`/commitments`) and require every revealed record to open to a commitment that was
+actually registered *before* re-ranking — so a substituted/fabricated pool is rejected. Proven by an
+isolating unit test (ranking passes, binding fails) and a live N2 negative in both languages. This is
+§8/§10 spec-conformance, not new scope. *(Residual, genuinely deferred: binding the FULL candidate set
+— i.e. detecting a registered recipient silently omitted from a decision — needs the decision to commit
+to its pool on-chain, a contract change, so it stays a later-phase item.)*
+
 **Context.** An adversarial review of the green Phase 1 loop confirmed a soundness gap: the verifier
 recomputes from whatever `/reveal` returns and never cross-checks it against the on-chain `Registered`
 commitments, so a dishonest allocator could reveal a different pool than it committed and still PASS

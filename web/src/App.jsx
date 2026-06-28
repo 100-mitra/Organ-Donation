@@ -48,9 +48,10 @@ export default function App() {
     guard(async () => {
       const audit = await fetch(`${API}/audit`).then((x) => x.json());
       const revealed = await fetch(`${API}/reveal`).then((x) => x.json());
+      const registered = await fetch(`${API}/commitments`).then((x) => x.json());
       const latest = audit.decisions[audit.decisions.length - 1];
       if (!latest) throw new Error("no decision on-chain yet — Match first");
-      const res = verifyDecision(latest, revealed.revealed);
+      const res = verifyDecision(latest, revealed.revealed, registered.registered);
       setVerify({ ...res, decisionId: latest.decisionId });
       say(res.allOk ? `VERIFY PASSED: decision #${latest.decisionId} recompute matches chain` : "VERIFY FAILED");
     });
