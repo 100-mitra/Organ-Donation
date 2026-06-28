@@ -111,4 +111,15 @@ describe("verifyDecision (Phase 3, CAS + pool completeness)", () => {
     const missing = registered.filter((c) => c !== onchain.rankedRecipientCommitments[0]);
     expect(verifyDecision(onchain, revealed, missing, P, registrations, erasures).allOk).toBe(false);
   });
+
+  it("tamper demo: editing a revealed record's content fails its binding (opens) check", () => {
+    // The UI tamper demo: backdate a recipient's dialysis-start AFTER the fact.
+    // The commitment is unchanged, so the edited record no longer opens -> detected.
+    const { onchain, revealed, registered, registrations, erasures } = build();
+    const t = structuredClone(revealed);
+    t.R1.record.dialysis_start_epoch_day -= 2000;
+    const res = verifyDecision(onchain, t, registered, P, registrations, erasures);
+    expect(res.allOk).toBe(false);
+    expect(res.checks.find((c) => c.name.startsWith("revealed R1")).ok).toBe(false);
+  });
 });
