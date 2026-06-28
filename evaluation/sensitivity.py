@@ -10,12 +10,13 @@ from evaluation.metrics import summarize
 from evaluation.policies import rank_cas, with_weights
 from evaluation.simulate import simulate
 
-# (label, attribute, weight values, metric key)
+# (label, attribute, weight values, metric key). Coarse steps keep the multi-seed
+# sweep (~30 seeds × all points) to a few minutes; the trend + spread is still clear.
 SWEEPS = [
-    ("high-CPRA access vs CPRA weight", "sensitization_cpra", list(range(0, 41, 5)), "rate_high_cpra"),
-    ("pediatric access vs pediatric weight", "pediatric", list(range(0, 31, 5)), "rate_pediatric"),
-    ("median waiting (days) vs waiting-time weight", "waiting_time", list(range(0, 61, 10)), "waiting_median"),
-    ("mean transplant age vs longevity weight", "longevity_epts", list(range(0, 41, 5)), "age_mean"),
+    ("high-CPRA access vs CPRA weight", "sensitization_cpra", list(range(0, 41, 10)), "rate_high_cpra"),
+    ("pediatric access vs pediatric weight", "pediatric", list(range(0, 31, 10)), "rate_pediatric"),
+    ("median waiting (days) vs waiting-time weight", "waiting_time", list(range(0, 61, 15)), "waiting_median"),
+    ("mean transplant age vs longevity weight", "longevity_epts", list(range(0, 41, 10)), "age_mean"),
 ]
 
 

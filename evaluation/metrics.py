@@ -48,6 +48,13 @@ def summarize(result: dict, waitlist: list[dict]) -> dict:
         "waiting_p90": _pct(waits, 90),
         "age_mean": statistics.mean(ages) if ages else None,
         "cpra_mean": statistics.mean(cpras) if cpras else None,
+        # subgroup denominators (sizes in the waitlist) — what each % is "out of".
+        "n_high_cpra": sum(1 for r in waitlist if r["cpra"] >= 80),
+        "n_low_cpra": sum(1 for r in waitlist if r["cpra"] < 80),
+        "n_O": sum(1 for r in waitlist if r["abo"] == "O"),
+        "n_nonO": sum(1 for r in waitlist if r["abo"] != "O"),
+        "n_pediatric": sum(1 for r in waitlist if r["age"] < 18),
+        "n_adult": sum(1 for r in waitlist if r["age"] >= 18),
     }
 
 
