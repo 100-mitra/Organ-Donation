@@ -50,12 +50,12 @@ def extract_features(donor: dict, recip: dict, policy: dict) -> dict:
     return {
         "waiting_days": waiting_days,
         "age_years": recip["age"],
-        "prior_living_donor": bool(recip["prior_living_donor"]),
+        "prior_living_donor": recip["prior_living_donor"],
         "cpra": recip["cpra"],
         "hla_mismatches": hla_mismatches(donor["hla"], recip["hla"]),
         "distance_band": distance_band(donor["region"], recip["region"], policy["region_zones"]),
         "epts_score": _clamp(recip["age"], 0, 100),  # placeholder input; weight 0 in v1
-        "urgent": bool(recip.get("urgent", False)),
+        "urgent": recip.get("urgent", False),
     }
 
 
@@ -75,7 +75,10 @@ def rate(rating: dict, value) -> int:
     if t == "threshold_bonus":
         return rating["points_if_true"] if value < rating["lt"] else rating["points_if_false"]
     if t == "boolean_bonus":
-        return rating["points_if_true"] if value else rating["points_if_false"]
+        # STRICT identity, not truthiness — Python bool() and JS Boolean() disagree on
+        # empty containers (bool([]) is False, Boolean([]) is true). Only a literal True
+        # earns the bonus, so both engines agree for every input (D-019).
+        return rating["points_if_true"] if value is True else rating["points_if_false"]
     if t == "map":
         return rating["map"].get(str(value), rating["default"])
     raise ValueError(f"unknown rating type: {t!r}")

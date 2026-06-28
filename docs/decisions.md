@@ -6,6 +6,20 @@
 
 ---
 
+## D-019 · 2026-06-28 · accepted — boolean_bonus uses STRICT identity (Python/JS truthiness divergence)
+**Context.** The Phase 2 adversarial review found a real cross-language parity bug: `extract_features`
+coerced `prior_living_donor`/`urgent` with Python `bool()` / JS `Boolean()`, which **disagree on empty
+containers** — `bool([])` is `False` (0 pts) but `Boolean([])` is `true` (100 pts). A record with
+`prior_living_donor=[]` (accepted by the `dict[str, Any]` API and canon-v1 valid) gets an *identical
+commitment* in both languages but a **1500-point CAS swing** (weight 15), so the browser verifier would
+disagree with the logged ranking — the exact divergence the thesis forbids; the three original vectors
+(literal true/false) never caught it. **Decision.** `boolean_bonus` now uses **strict identity**
+(`value is True` / `value === true`) so only a literal `True` earns the bonus and both engines agree for
+*every* input; `extract_features` passes the raw value through. Added a `boolean_strictness` frozen
+vector (`[]`/`{}` → treated as false) that both ports must reproduce. **Consequence.** Parity restored
+and locked; a malformed boolean is a deterministic "no bonus" in both languages rather than a silent
+divergence. *(From Phase 2 review; standing rule [[d-004]].)*
+
 ## D-018 · 2026-06-28 · accepted — CAS ranking is byte-for-byte parity-locked across Python and JS
 **Context.** The verifiability thesis needs the CAS recompute to be identical in the engine and the
 browser, the same way commitments were locked (D-004/D-011). **Decision.** `web/src/cas.js` is the JS

@@ -60,12 +60,23 @@ _BASE = {
 }
 TIE_RECIPS = [{**_BASE, "id": rid} for rid in ("RA", "RB", "RC")]
 
+# Boolean strictness: [] / {} must NOT be truthy-coerced (Python bool() vs JS
+# Boolean() disagree on empty containers). Only literal True earns the bonus, so BE
+# (prior_living_donor=[]) ranks WITH BF (False), never above BT (True). (D-019)
+BOOL_RECIPS = [
+    {**_BASE, "id": "BT", "prior_living_donor": True},
+    {**_BASE, "id": "BF", "prior_living_donor": False},
+    {**_BASE, "id": "BE", "prior_living_donor": []},
+    {**_BASE, "id": "BU", "urgent": {}},
+]
+
 d8, r8 = generate_pool(8, seed=123)
 
 cases = [
     case("demo_pool", DONOR, RECIPIENTS, SEED),
     case("synthetic_8", d8, r8, SEED),
     case("tie_break_keccak", TIE_DONOR, TIE_RECIPS, SEED),
+    case("boolean_strictness", TIE_DONOR, BOOL_RECIPS, SEED),
 ]
 
 out = {

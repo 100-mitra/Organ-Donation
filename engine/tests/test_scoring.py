@@ -68,6 +68,14 @@ def test_rate_boolean_and_map():
     assert [rate(pr, v) for v in (0, 1, 2, 3)] == [100, 50, 0, 0]  # 3 -> default
 
 
+def test_boolean_bonus_is_strict_not_truthy():
+    # Only a literal True earns the bonus — Python bool() and JS Boolean() disagree on
+    # empty containers, so strict identity keeps the two engines in lockstep (D-019).
+    r = R("prior_living_donor")
+    assert rate(r, True) == 100
+    assert [rate(r, v) for v in (False, [], {}, 1, 0, "true")] == [0, 0, 0, 0, 0, 0]
+
+
 # ---- features ----
 
 def test_waiting_days_derived_and_clamped():

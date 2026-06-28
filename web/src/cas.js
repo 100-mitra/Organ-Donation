@@ -31,12 +31,12 @@ export function extractFeatures(donor, recip, policy) {
   return {
     waiting_days: Math.max(0, donor.recovered_at_epoch_day - recip.dialysis_start_epoch_day),
     age_years: recip.age,
-    prior_living_donor: Boolean(recip.prior_living_donor),
+    prior_living_donor: recip.prior_living_donor,
     cpra: recip.cpra,
     hla_mismatches: hlaMismatches(donor.hla, recip.hla),
     distance_band: distanceBand(donor.region, recip.region, policy.region_zones),
     epts_score: clamp(recip.age, 0, 100),
-    urgent: Boolean(recip.urgent),
+    urgent: recip.urgent,
   };
 }
 
@@ -54,7 +54,9 @@ export function rate(rating, value) {
     case "threshold_bonus":
       return value < rating.lt ? rating.points_if_true : rating.points_if_false;
     case "boolean_bonus":
-      return value ? rating.points_if_true : rating.points_if_false;
+      // STRICT identity, not truthiness — Boolean([]) is true but Python bool([]) is
+      // False; only a literal true earns the bonus, so both engines agree (D-019).
+      return value === true ? rating.points_if_true : rating.points_if_false;
     case "map": {
       const k = String(value);
       return k in rating.map ? rating.map[k] : rating.default;
