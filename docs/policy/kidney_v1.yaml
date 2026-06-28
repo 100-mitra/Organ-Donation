@@ -1,0 +1,162 @@
+# =============================================================================
+# Composite Allocation Score (CAS) — deceased-donor KIDNEY — policy version v1
+# =============================================================================
+# Modeled on OPTN "continuous distribution" (CLAUDE.md §9): one weighted composite
+# score across attribute buckets, replacing rigid classifications.
+#
+# HARD RULES (do not violate — they are the verifiability thesis):
+#   * ALL arithmetic is INTEGER. No floats anywhere (rating outputs are integer points).
+#   * This file is the SOURCE OF TRUTH for scoring. The contract logs `version` with
+#     every decision so a verifier knows which rules to re-apply.
+#   * Any change to gates, rating functions, weights, or tie-breaks => bump `version`
+#     and regenerate any affected frozen vectors. Versions are immutable once logged.
+#
+# The Phase 2 scorer (engine/scoring.py) is a pure INTERPRETER of this file:
+#   CAS = Σ_i  weight_i × rating_i(attribute_i)        (all integer)
+# =============================================================================
+
+version: kidney_v1
+canonicalization: canon-v1      # scoring + commitments share one serialization (docs/canonicalization.md)
+
+# -----------------------------------------------------------------------------
+# Step A — eligibility HARD GATES. Failing ANY gate excludes the candidate from
+# scoring entirely (excluded, not merely down-ranked).
+# -----------------------------------------------------------------------------
+gates:
+  abo:
+    # donor blood group -> the recipient groups that may receive (compatibility,
+    # NOT identity). ABO-identical-preferred is a refinement parked in LATER.md.
+    O:  [O, A, B, AB]
+    A:  [A, AB]
+    B:  [B, AB]
+    AB: [AB]
+  virtual_crossmatch:
+    # exclude the recipient if the donor expresses ANY antigen in the recipient's
+    # `unacceptable_antigens` set (the virtual crossmatch).
+    enabled: true
+  sanity:
+    # configurable absurd-band rejection; permissive in v1.
+    min_age_years: 0
+    max_age_years: 90
+
+# -----------------------------------------------------------------------------
+# Rating-function taxonomy (integer semantics the interpreter must implement)
+# -----------------------------------------------------------------------------
+#   linear_clamped     points = clamp( (input * num) // den, 0, max_points )
+#   linear_descending  points = max( floor_points, max_points - input * per_mismatch )
+#   step               ascending breakpoints; the highest `at` with at <= input wins
+#   threshold_bonus    points_if_true if (input < lt) else points_if_false
+#   boolean_bonus      points_if_true if input is true else points_if_false
+#   map                discrete input -> points; `default` if not found
+# All `input`s are integers supplied by the engine's feature extractor.
+# -----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+# Step B — Composite Allocation Score. Weights below sum to 100 (longevity and
+# urgency are defined-but-0). Buckets mirror OPTN continuous distribution.
+# -----------------------------------------------------------------------------
+attributes:
+
+  waiting_time:
+    bucket: patient_access
+    weight: 30
+    rating:
+      type: linear_clamped
+      input: waiting_days          # whole days since DIALYSIS START (not listing date)
+      num: 2
+      den: 73                      # ~100 points at 3650 days (10y); 10 points at 1y
+      max_points: 100
+
+  pediatric:
+    bucket: patient_access
+    weight: 15
+    rating:
+      type: threshold_bonus
+      input: age_years
+      lt: 18                       # recipient strictly under 18
+      points_if_true: 100
+      points_if_false: 0
+
+  prior_living_donor:
+    bucket: patient_access
+    weight: 15
+    rating:
+      type: boolean_bonus
+      input: prior_living_donor    # reciprocity for prior living donors
+      points_if_true: 100
+      points_if_false: 0
+
+  sensitization_cpra:
+    bucket: candidate_biology
+    weight: 20
+    rating:
+      type: step                   # CPRA integer 0..100; steep at the top
+      input: cpra
+      steps:
+        - { at: 0,   points: 0 }
+        - { at: 20,  points: 10 }
+        - { at: 50,  points: 25 }
+        - { at: 80,  points: 50 }
+        - { at: 95,  points: 75 }
+        - { at: 98,  points: 90 }
+        - { at: 99,  points: 95 }
+        - { at: 100, points: 100 }
+
+  hla_match:
+    bucket: candidate_biology
+    weight: 15
+    rating:
+      type: linear_descending
+      input: hla_mismatches        # 0..6 mismatches across A/B/DR; fewer => more points
+      max_points: 100
+      per_mismatch: 16             # 0 mm -> 100 ; 6 mm -> 4
+      floor_points: 0
+
+  proximity:
+    bucket: placement_efficiency
+    weight: 5
+    rating:
+      type: map
+      input: distance_band         # 0 same-region, 1 adjacent, 2 far
+      map: { 0: 100, 1: 50, 2: 0 }
+      default: 0
+
+  # --- Defined but weight-0 (honest completeness; CLAUDE.md §9 ethics note) ---
+
+  longevity_epts:
+    bucket: post_transplant_survival
+    weight: 0                      # OFF by default. Turning it on is a documented policy choice
+                                   # with real equity tension (disadvantages older/sicker patients);
+                                   # evaluating on/off is a Phase 5 experiment (LATER.md).
+    rating:
+      type: linear_descending
+      input: epts_score            # integer 0..100; lower EPTS = better expected survival => more points
+      max_points: 100
+      per_mismatch: 1              # points = 100 - epts_score
+      floor_points: 0
+
+  medical_urgency:
+    bucket: medical_urgency
+    weight: 0                      # minimal for kidney (most candidates are on dialysis); defined for
+                                   # completeness, no real input in v1.
+    rating:
+      type: boolean_bonus
+      input: urgent
+      points_if_true: 100
+      points_if_false: 0
+
+# -----------------------------------------------------------------------------
+# Step C — determinism & tie-breaking (required for verifiability). Applied in
+# order when CAS values tie.
+# -----------------------------------------------------------------------------
+tie_break:
+  - { by: waiting_days, direction: desc }     # 1) longer waiting time ranks higher
+  - { by: keccak_seed,  direction: asc }      # 2) deterministic seed = keccak(decision_id || recipient_id)
+
+# -----------------------------------------------------------------------------
+# Output contract: ranked list of recipients, each with the gates it passed and a
+# per-bucket integer point breakdown (the human-readable explanation, CLAUDE.md §9).
+# -----------------------------------------------------------------------------
+output:
+  include_explanation: true
+  explanation_granularity: per_bucket

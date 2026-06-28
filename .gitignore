@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+
+# Node / Hardhat
+node_modules/
+artifacts/
+cache/
+coverage/
+.env
+.env.*
+
+# Build / editor
+dist/
+.vscode/
+.idea/
+*.log
+
+# Off-chain secrets — NEVER commit salts, keys, or the encrypted PII store
+# (these are the erasure lever and the integrity root; see CLAUDE.md §14)
+secrets/
+*.salt
+*.key
+*.sqlite
+*.db

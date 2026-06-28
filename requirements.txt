@@ -1,0 +1,16 @@
+# Engine + API runtime/dev dependencies (Python 3.11+; verified on 3.14).
+# Every item is free / open-source / local — no paid deps (CLAUDE.md §6 $0 rule).
+
+# keccak256 (Ethereum variant) for commitments — same hash web3.py uses.
+eth-hash[pycryptodome]>=0.7.0
+
+# Policy config is YAML (docs/policy/kidney_v1.yaml).
+PyYAML>=6.0
+
+# Tests.
+pytest>=8.0
+
+# --- added as their phases land (kept here as a forward note, commented) ---
+# fastapi>=0.115      # api/ (Phase 1)
+# uvicorn>=0.30       # api/ dev server (Phase 1)
+# web3>=7.0           # talk to the local Hardhat chain (Phase 1)

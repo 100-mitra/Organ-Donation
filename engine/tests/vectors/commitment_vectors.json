@@ -1,0 +1,40 @@
+{
+  "canonicalization_version": "canon-v1",
+  "note": "Frozen cross-language commitment test vectors. ANY independent implementation (Python engine, JS browser verifier) MUST reproduce every value below exactly. See docs/canonicalization.md. Do not edit by hand — regenerate only on a deliberate canon version bump.",
+  "keccak256_empty": "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+  "vectors": [
+    {
+      "name": "recipient_R001",
+      "record": {
+        "id": "R001",
+        "abo": "O",
+        "hla": {
+          "A": [
+            1,
+            2
+          ],
+          "B": [
+            7,
+            8
+          ],
+          "DR": [
+            15,
+            4
+          ]
+        },
+        "age": 45,
+        "unacceptable_antigens": [
+          52,
+          88
+        ],
+        "cpra": 80,
+        "dialysis_start_epoch_days": 19000,
+        "prior_living_donor": false,
+        "region": "TN"
+      },
+      "salt": "000102030405060708090a0b0c0d0e0f",
+      "canonical_json": "{\"abo\":\"O\",\"age\":45,\"cpra\":80,\"dialysis_start_epoch_days\":19000,\"hla\":{\"A\":[1,2],\"B\":[7,8],\"DR\":[15,4]},\"id\":\"R001\",\"prior_living_donor\":false,\"region\":\"TN\",\"unacceptable_antigens\":[52,88]}",
+      "commitment": "0xfd73dac0b7a8b769001e33f2f2573ede9d3022ce2682beb8bbea85ebf14fff65"
+    }
+  ]
+}
