@@ -1,33 +1,51 @@
-"""Chain-free unit tests for the off-chain store."""
+"""Chain-free unit tests for the encrypted off-chain store + erasure."""
 from __future__ import annotations
 
-from api.store import OffChainStore
+from api.store import EncryptedStore
 from engine.commitments import commit
 
 
-def test_store_commitment_matches_engine():
-    s = OffChainStore()
-    rec = {"id": "R1", "abo": "O", "waiting_days": 100}
-    e = s.add(rec, "recipient", salt_hex="00112233")
-    assert e["commitment"] == commit(rec, "00112233")
-    assert e["kind"] == "recipient"
+def test_add_and_get_roundtrip_with_matching_commitment():
+    s = EncryptedStore()
+    rec = {"id": "R1", "abo": "O", "x": 1}
+    meta = s.add(rec, "recipient", "00112233")
+    assert meta["commitment"] == commit(rec, "00112233")
+    got = s.get("R1")
+    assert got["record"] == rec and got["salt"] == "00112233"
+    assert got["commitment"] == meta["commitment"] and got["kind"] == "recipient"
 
 
-def test_reveal_exposes_salt_and_recipients_are_filtered():
-    s = OffChainStore()
-    s.add({"id": "R1", "waiting_days": 1}, "recipient", "00")
-    s.add({"id": "D1"}, "donor", "01")
-    rev = s.reveal()
-    assert set(rev) == {"R1", "D1"}
-    assert rev["R1"]["salt"] == "00"
-    assert [e["record"]["id"] for e in s.recipients()] == ["R1"]
+def test_pii_is_encrypted_at_rest():
+    s = EncryptedStore()
+    s.add({"id": "R1", "secret": "sensitive-pii"}, "recipient", "00")
+    raw = s._by_id["R1"]
+    assert b"sensitive-pii" not in raw["ct"]  # plaintext never stored in the clear
 
 
-def test_random_salt_is_used_when_none_given():
-    s = OffChainStore()
-    e1 = s.add({"id": "R1", "x": 1}, "recipient")
-    s2 = OffChainStore()
-    e2 = s2.add({"id": "R1", "x": 1}, "recipient")
-    # Different random salts => different commitments for the same record.
-    assert e1["salt"] != e2["salt"]
-    assert e1["commitment"] != e2["commitment"]
+def test_erase_destroys_salt_and_ciphertext_making_commitment_unlinkable():
+    s = EncryptedStore()
+    m = s.add({"id": "R1", "x": 1}, "recipient", "00")
+    c = s.erase("R1")
+    assert c == m["commitment"]  # returned so the caller can mark erased on-chain
+    assert s.get("R1") is None  # record no longer recoverable
+    assert "R1" not in s.reveal()
+    e = s._by_id["R1"]
+    assert e["salt"] is None and e["ct"] is None and e["nonce"] is None and e["erased"] is True
+    assert s.erase("R1") is None  # idempotent
+
+
+def test_recipients_and_reveal_exclude_erased():
+    s = EncryptedStore()
+    s.add({"id": "R1", "x": 1}, "recipient", "00")
+    r2 = s.add({"id": "R2", "x": 2}, "recipient", "01")
+    s.add({"id": "D1"}, "donor", "02")
+    s.erase("R1")
+    assert [r["commitment"] for r in s.recipients()] == [r2["commitment"]]
+    assert set(s.reveal()) == {"R2", "D1"}
+
+
+def test_random_salt_when_none_given():
+    s1, s2 = EncryptedStore(), EncryptedStore()
+    a = s1.add({"id": "R1", "x": 1}, "recipient")
+    b = s2.add({"id": "R1", "x": 1}, "recipient")
+    assert a["commitment"] != b["commitment"]  # different random salts

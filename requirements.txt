@@ -4,6 +4,9 @@
 # keccak256 (Ethereum variant) for commitments — same hash web3.py uses.
 eth-hash[pycryptodome]>=0.7.0
 
+# AES-256-GCM for the off-chain encrypted PII store (Phase 3).
+pycryptodome>=3.20
+
 # Policy config is YAML (docs/policy/kidney_v1.yaml).
 PyYAML>=6.0
 
