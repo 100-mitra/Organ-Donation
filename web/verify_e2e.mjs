@@ -60,6 +60,16 @@ async function main() {
   }
   console.log("  [ok]  NEGATIVE N3: subset-drop (dropped registered recipient) rejected (completeness, D-015)");
 
+  // N4 (UI tamper demo): edit a revealed record after the fact -> commitment no longer opens.
+  const rv3 = structuredClone(revealed.revealed);
+  const rrid = Object.keys(rv3).find((k) => rv3[k].kind === "recipient");
+  rv3[rrid].record.dialysis_start_epoch_day -= 2000;
+  if (V(latest, rv3).allOk) {
+    console.error("FAIL: edited record still verified");
+    process.exit(1);
+  }
+  console.log("  [ok]  NEGATIVE N4: edited record fails its binding (UI tamper demo)");
+
   console.log(`PASS: browser verify path green for decision #${d.decisionId}`);
 }
 

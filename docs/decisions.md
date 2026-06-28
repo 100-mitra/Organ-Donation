@@ -6,6 +6,20 @@
 
 ---
 
+## D-023 · 2026-06-28 · accepted — Phase 4 UI: Verify reuses the lockstep verifier; tamper demo is the centerpiece
+**Context.** The web UI must let a non-technical person drive register → match → view explanations →
+verify, with verification as the centerpiece. **Decisions.** (1) The Verify panel calls the EXISTING
+`web/src/verify.js` (which uses `cas.js`/`canon.js`) — verification logic is NOT reimplemented in the UI,
+so the browser path stays byte-for-byte in lockstep with the engine and the frozen vectors keep covering
+it. (2) The centerpiece is a visible **tamper demo**: the UI backdates a revealed record's dialysis-start
+*after* the decision was logged; the edited record no longer opens to its on-chain commitment, so Verify
+FAILS — making tamper-evidence tangible. Locked by a vitest unit test + a live N4 negative. (3) The Verify
+tab is framed as the **authorized-auditor** flow over the token-gated `/reveal` ([[d-022]]); an optional
+token field carries `Authorization: Bearer` for the gated endpoints (demo-open on synthetic data).
+(4) No engine/contract/API change — Phase 4 is purely a thin `web/` layer over the existing endpoints.
+**Consequence.** A browser-drivable end-to-end flow whose verification is the same trusted code path the
+tests pin, with tampering shown failing live.
+
 ## D-022 · 2026-06-28 · accepted — /reveal is an intentional, access-controlled PII disclosure
 **Context.** The verifiable-recompute model *requires* an authorized auditor to obtain records + salts
 to recompute (CLAUDE.md §10, [[d-003]]); but the encrypted-at-rest store is undone if `/reveal` hands
