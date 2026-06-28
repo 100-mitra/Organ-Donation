@@ -6,6 +6,31 @@
 
 ---
 
+## D-015 · 2026-06-28 · open — binding is one-directional; omission/subset attacks remain (pending decision)
+**Context.** Re-running the adversarial workflow on the D-013 fix confirmed the binding closes the
+*fabrication/substitution* attack (a revealed record that was never Registered is rejected — proven by
+N2), but it only enforces **revealed ⊆ registered**, not coverage. Two residual attacks remain, both
+no-contract-change, both confirmed:
+- **[CRITICAL] subset-drop.** A dishonest server reveals only a *subset* of the registered pool and
+  logs a decision over that subset; binding + re-rank + hash all pass → a top-priority registered
+  recipient is silently dropped (the "no silent queue-jumping" guarantee, §2).
+- **[HIGH] kind-mislabel.** A registered+revealed recipient tagged with a bogus `kind` passes the
+  binding loop (which iterates all kinds) but is filtered out of the re-rank (`kind=='recipient'`),
+  hiding it from the ranking with a green Verify.
+**Why not auto-fixed.** The two specified fixes (D-013 membership binding, D-014 canon) are done and
+green. Closing these residuals goes beyond the precise Group-A instruction and is a maintainer call:
+- *kind-mislabel* is cheap and verifier-side — reject unknown `kind` values + assert
+  {revealed recipients} == {ranked} (permutation), no contract change.
+- *subset-drop* needs the verifier to know the **decision's candidate pool**. The on-chain `Registered`
+  set is *global and accumulates across every /seed* (new salts each time), so a naive
+  "registered minus donor == ranked" coverage check false-positives after repeated seeds. A correct fix
+  needs registration scoped per match-run — either a registration-epoch notion or logging the pool in
+  the decision (a contract change, which this round forbade). So it is **not** a trivial verifier tweak.
+**Status.** OPEN, surfaced at the pre-merge review checkpoint. Decision needed: (a) merge as-is and
+track for Phase 3, (b) apply the cheap kind-mislabel + permutation hardening now, or (c) take the
+subset-drop fix (touches the contract / registration scoping — beyond "AuditLedger unchanged").
+*(From re-verification of D-013; relates to the omission residual noted there.)*
+
 ## D-014 · 2026-06-28 · accepted — canon-v1 integer/float hardening + frozen-vector matrix
 **Context.** Adversarial review found two latent Python↔JS divergences the single frozen vector never
 exercised: integers > 2^53 (Python keeps precision, JS rounds the double) and the `2.0`/`2` asymmetry
