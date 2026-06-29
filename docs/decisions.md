@@ -6,6 +6,22 @@
 
 ---
 
+## D-025 · 2026-06-28 · accepted — Phase 6 capstone = kidney paired exchange (KPD), not ZK
+**Context.** Phase 6 is an *optional* single capstone — "pick exactly one" of (A) ZK
+verify-without-revealing or (B) kidney paired exchange, never both, with the choice deferred to the
+Phase 1.5 ZK feasibility spike (CLAUDE.md §4, §11; default-to-cut, [[d-001]]). The spike ([[d-016]],
+recorded on branch `spike/zk`) found ZK *feasible* — a zkVM proof recomputes a canon-v1 commitment
+in-circuit — but costly and higher-risk: ~3-minute CPU proofs with the on-chain (groth16) wrap left
+unmeasured, so public, reveal-free verification is not yet proven end-to-end. **Decision.** Choose
+**(B) KPD** as the one Phase 6 capstone: an ILP over a compatibility graph (2-/3-cycles + altruistic-donor
+chains) on a free solver (OR-Tools/HiGHS/PuLP+CBC), logged + verifiable by the same recompute-and-compare
+path; legal in India under THOTA. **(A) ZK becomes documented future work, not a second capstone** — the
+higher-certainty option wins, per CLAUDE.md's own "let the spike decide; otherwise (B)" guidance.
+**Consequence.** Phase 6 scope is fixed to KPD; ZK verify-without-revealing is parked as future work
+(it would make verification *public*, closing the auditor-only limitation [[d-003]]). This entry is the
+source for the "chosen capstone" claim in the Phase 5 write-up ([`ANALYSIS.md`](ANALYSIS.md) §7). The KPD
+build has not started — this records the *choice*, not its implementation.
+
 ## D-024 · 2026-06-28 · accepted — Phase 5 evaluation: framing + simulation design + reproducibility
 **Context.** The evaluation must quantify the policy's behaviour without over-claiming fairness on
 synthetic data. **Decisions.** (1) **Framing:** report "**what the mechanism does**" — the relative

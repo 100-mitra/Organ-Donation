@@ -108,7 +108,7 @@ purely conceptual, there are no standard datasets or benchmarks, and most report
 §15). Against that backdrop, this project's contribution is (a) a working, tested, *independently
 verifiable* system; (b) a real multi-seed evaluation — 30 seeds, mean ± std, with an FCFS baseline (D-024; RESULTS.md) — the field's most-repeated
 gap; and (c) explicit, honest scoping of what is and is not guaranteed (§2–§3). The decisions log
-(D-001–D-024) records every real choice and its rationale; owning the oracle boundary and the
+(D-001–D-025) records every real choice and its rationale; owning the oracle boundary and the
 auditor-only limitation rather than over-claiming **is itself the contribution** (D-001, D-003;
 CLAUDE.md §2).
 
@@ -119,10 +119,10 @@ CLAUDE.md §2).
   that recomputes a canon-v1 commitment *in-circuit*, with spike-recorded figures of ~3-minute CPU proofs
   and a ~2.8 MB core proof; the on-chain groth16 wrap was not measured. This is the route to
   *public* verification that closes §3's auditor-only limitation (D-003).
-- **Kidney paired exchange (KPD)** — selected as the Phase 6 capstone (a maintainer decision; CLAUDE.md
-  Phase 6 presents KPD as option B and leaves the capstone choice open, to be settled by the Phase-1.5
-  spike — so this selection is not yet recorded in the decisions log). It is an ILP over a compatibility
-  graph (cycles + altruistic-donor chains, free solver), logged and verified the same way (CLAUDE.md Phase 6B).
+- **Kidney paired exchange (KPD)** — selected as the Phase 6 capstone (D-025: chosen over the ZK option
+  after the Phase-1.5 spike found ZK feasible but higher-risk; CLAUDE.md Phase 6 had left the choice
+  open). It is an ILP over a compatibility graph (cycles + altruistic-donor chains, free solver), logged
+  and verified the same way (CLAUDE.md Phase 6B).
 - **Real consortium deployment.** A NOTTO + transplant-centres consortium chain is where the
   blockchain's distinctive value (BFT consensus among mutually-distrusting validators) is actually
   realized; the prototype is a single local node *simulating* that, so the consensus value is simulated,
