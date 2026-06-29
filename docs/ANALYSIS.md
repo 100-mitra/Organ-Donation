@@ -71,7 +71,23 @@ not trafficking.
 
 ## 4. What blockchain actually adds
 
-*[author to write]*
+Answer the skeptic plainly. For the tamper-evidence and auditability this single-node prototype actually
+demonstrates, a signed append-only log — a Merkle root over the off-chain store, written by one trusted
+party — would give the same guarantees (the signed-Merkle-log baseline parked in [`LATER.md`](LATER.md)).
+Recompute-and-compare, the salted commitments, and the decision log all work identically over such a log.
+So **with a single writer, the blockchain is not load-bearing** — exactly as threat-model.md states: the
+ledger is "not intrinsically better than a signed, append-only Merkle log until there are multiple
+mutually-distrusting validators."
+
+The chain earns its place only in the multi-party consortium it is designed for. With NOTTO, transplant
+centres, and regulators each running an independent validator, no single party can rewrite history or
+unilaterally swap the rule, and the allocation policy executes as shared code none of them solely
+controls — distributed trust among institutions that do not fully trust each other, which is the actual
+structure of organ allocation. That is the honest bottom line: the prototype demonstrates the *mechanism*
+(policy-faithful execution an auditor can recompute), but the justification for a ledger over a signed log
+is the **consortium deployment, not the demo**. The claim stays "policy-faithful execution," not
+"decentralized trust" (CLAUDE.md §5; D-003) — the chain does not solve trust; it changes *who* must be
+trusted, and only once there is more than one writer.
 
 ## 5. What the evaluation shows (mechanism, not fairness)
 
