@@ -31,11 +31,12 @@ function Breakdown({ breakdown }) {
   );
 }
 
-export default function Allocate({ api }) {
+export default function Allocate({ api, captured = null }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
   const [seeded, setSeeded] = useState(null);
-  const [decision, setDecision] = useState(null);
+  // Demo mode is read-only: show the pre-captured decision; never fake a live match.
+  const [decision, setDecision] = useState(captured);
 
   const run = (fn) => async () => {
     setErr(null);
@@ -59,14 +60,25 @@ export default function Allocate({ api }) {
 
   return (
     <div>
-      <p style={{ color: "#555" }}>
-        Register the candidate pool + donor on-chain, then run the match. Each record's salted
-        commitment goes to the ledger; the PII stays in the encrypted off-chain store.
-      </p>
-      <div style={{ margin: "12px 0" }}>
-        <button style={btn} onClick={onRegister} disabled={busy}>1 · Register pool</button>
-        <button style={btn} onClick={onMatch} disabled={busy || !seeded}>2 · Run match</button>
-      </div>
+      {captured ? (
+        <p style={{ color: "#555" }}>
+          The decision below was produced by the real pipeline — pool registered on-chain (salted
+          commitments only), CAS ranking computed, decision logged — and captured as this demo's
+          snapshot. Running a <i>new</i> match needs the live stack (clone the repo); this page
+          won't fake one.
+        </p>
+      ) : (
+        <>
+          <p style={{ color: "#555" }}>
+            Register the candidate pool + donor on-chain, then run the match. Each record's salted
+            commitment goes to the ledger; the PII stays in the encrypted off-chain store.
+          </p>
+          <div style={{ margin: "12px 0" }}>
+            <button style={btn} onClick={onRegister} disabled={busy}>1 · Register pool</button>
+            <button style={btn} onClick={onMatch} disabled={busy || !seeded}>2 · Run match</button>
+          </div>
+        </>
+      )}
 
       {err && <div style={{ color: "#c33", marginBottom: 10 }}>⚠ {err}</div>}
       {seeded && !decision && (
