@@ -31,7 +31,7 @@ function Checks({ checks }) {
   );
 }
 
-export default function Verify({ api }) {
+export default function Verify({ api, demo = false }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
   const [honest, setHonest] = useState(null);
@@ -82,8 +82,11 @@ export default function Verify({ api }) {
     <div>
       <div style={{ background: "#f4f7ff", border: "1px solid #d7e3ff", borderRadius: 8, padding: 12, marginBottom: 14, fontSize: 14, color: "#334" }}>
         <b>Authorized-auditor view.</b> Verification re-derives the ranking <b>in your browser</b> from the
-        on-chain decision + the records revealed by the access-controlled <code>/reveal</code> endpoint
-        (token-gated, D-022; open here on synthetic data). It does <b>not</b> trust the allocator — it
+        on-chain decision + the revealed records{" "}
+        {demo
+          ? "(here: the captured snapshot; live, they come from the access-controlled /reveal endpoint, D-022)"
+          : "revealed by the access-controlled /reveal endpoint (token-gated, D-022; open here on synthetic data)"}
+        . It does <b>not</b> trust the allocator — it
         recomputes the Composite Allocation Score and checks every value against the ledger.
       </div>
 

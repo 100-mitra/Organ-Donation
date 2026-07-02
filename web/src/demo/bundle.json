@@ -1,0 +1,672 @@
+{
+ "_meta": {
+  "captured_at_commit": "e13d52e",
+  "decision_id": 0,
+  "note": "Pre-captured snapshot of one REAL allocation produced by the full local stack (Hardhat chain + API + CAS engine) on synthetic data. These are the verbatim responses of the live endpoints; a live deployment would read them from the chain/API instead. Captured by scripts/capture_demo_bundle.py.",
+  "policy_version": "kidney_v1"
+ },
+ "audit": {
+  "decisions": [
+   {
+    "block": 8,
+    "by": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "candidatePool": [
+     "0x04fae5498397c4e369f04775da4aa92db3d5491eb414e1f7f38daee5d8f4adaa",
+     "0x8c3cdafbedc64dc5fdff20d473b2fcfba0b4ef168ee4f3bde3dc9ec929f87773",
+     "0xa22df272cbbfa82adb195a9876ac1c62c929d04041137ca2ef1a7dd73252a4a4",
+     "0xddb892d610db48f3f9e1badc150111998740b9a4051995c55dc8dac17f69eeee",
+     "0xf142e85f9280e36a8a20cbf646cb87c85f03658c439e8f5787954ccd1788c2a7"
+    ],
+    "decisionId": 0,
+    "donorCommitment": "0xf407a90e5000d44a2a45768103a2d04b1df7a4faa4f3cc83b58d21a206f7e1b1",
+    "policyVersion": "kidney_v1",
+    "rankedRecipientCommitments": [
+     "0xf142e85f9280e36a8a20cbf646cb87c85f03658c439e8f5787954ccd1788c2a7",
+     "0xa22df272cbbfa82adb195a9876ac1c62c929d04041137ca2ef1a7dd73252a4a4",
+     "0xddb892d610db48f3f9e1badc150111998740b9a4051995c55dc8dac17f69eeee"
+    ],
+    "rankingHash": "0x149251928052a5e1b9456144b996de7ffe2c8956ad83f9d6f1a693b424b8aded"
+   }
+  ]
+ },
+ "commitments": {
+  "registered": [
+   "0xa22df272cbbfa82adb195a9876ac1c62c929d04041137ca2ef1a7dd73252a4a4",
+   "0xddb892d610db48f3f9e1badc150111998740b9a4051995c55dc8dac17f69eeee",
+   "0xf142e85f9280e36a8a20cbf646cb87c85f03658c439e8f5787954ccd1788c2a7",
+   "0x04fae5498397c4e369f04775da4aa92db3d5491eb414e1f7f38daee5d8f4adaa",
+   "0x8c3cdafbedc64dc5fdff20d473b2fcfba0b4ef168ee4f3bde3dc9ec929f87773",
+   "0xf407a90e5000d44a2a45768103a2d04b1df7a4faa4f3cc83b58d21a206f7e1b1"
+  ]
+ },
+ "match": {
+  "candidatePool": [
+   "0x04fae5498397c4e369f04775da4aa92db3d5491eb414e1f7f38daee5d8f4adaa",
+   "0x8c3cdafbedc64dc5fdff20d473b2fcfba0b4ef168ee4f3bde3dc9ec929f87773",
+   "0xa22df272cbbfa82adb195a9876ac1c62c929d04041137ca2ef1a7dd73252a4a4",
+   "0xddb892d610db48f3f9e1badc150111998740b9a4051995c55dc8dac17f69eeee",
+   "0xf142e85f9280e36a8a20cbf646cb87c85f03658c439e8f5787954ccd1788c2a7"
+  ],
+  "decisionId": 0,
+  "donorCommitment": "0xf407a90e5000d44a2a45768103a2d04b1df7a4faa4f3cc83b58d21a206f7e1b1",
+  "explanations": [
+   {
+    "breakdown": {
+     "hla_match": {
+      "bucket": "candidate_biology",
+      "points": 100,
+      "weight": 15,
+      "weighted": 1500
+     },
+     "longevity_epts": {
+      "bucket": "post_transplant_survival",
+      "points": 50,
+      "weight": 0,
+      "weighted": 0
+     },
+     "medical_urgency": {
+      "bucket": "medical_urgency",
+      "points": 0,
+      "weight": 0,
+      "weighted": 0
+     },
+     "pediatric": {
+      "bucket": "patient_access",
+      "points": 0,
+      "weight": 15,
+      "weighted": 0
+     },
+     "prior_living_donor": {
+      "bucket": "patient_access",
+      "points": 0,
+      "weight": 15,
+      "weighted": 0
+     },
+     "proximity": {
+      "bucket": "placement_efficiency",
+      "points": 100,
+      "weight": 5,
+      "weighted": 500
+     },
+     "sensitization_cpra": {
+      "bucket": "candidate_biology",
+      "points": 0,
+      "weight": 20,
+      "weighted": 0
+     },
+     "waiting_time": {
+      "bucket": "patient_access",
+      "points": 100,
+      "weight": 30,
+      "weighted": 3000
+     }
+    },
+    "cas": 5000,
+    "eligible": true,
+    "gates": {
+     "abo": true,
+     "sanity": true,
+     "virtual_crossmatch": true
+    },
+    "id": "R1",
+    "waiting_days": 7000
+   },
+   {
+    "breakdown": {
+     "hla_match": {
+      "bucket": "candidate_biology",
+      "points": 52,
+      "weight": 15,
+      "weighted": 780
+     },
+     "longevity_epts": {
+      "bucket": "post_transplant_survival",
+      "points": 88,
+      "weight": 0,
+      "weighted": 0
+     },
+     "medical_urgency": {
+      "bucket": "medical_urgency",
+      "points": 0,
+      "weight": 0,
+      "weighted": 0
+     },
+     "pediatric": {
+      "bucket": "patient_access",
+      "points": 100,
+      "weight": 15,
+      "weighted": 1500
+     },
+     "prior_living_donor": {
+      "bucket": "patient_access",
+      "points": 0,
+      "weight": 15,
+      "weighted": 0
+     },
+     "proximity": {
+      "bucket": "placement_efficiency",
+      "points": 50,
+      "weight": 5,
+      "weighted": 250
+     },
+     "sensitization_cpra": {
+      "bucket": "candidate_biology",
+      "points": 0,
+      "weight": 20,
+      "weighted": 0
+     },
+     "waiting_time": {
+      "bucket": "patient_access",
+      "points": 41,
+      "weight": 30,
+      "weighted": 1230
+     }
+    },
+    "cas": 3760,
+    "eligible": true,
+    "gates": {
+     "abo": true,
+     "sanity": true,
+     "virtual_crossmatch": true
+    },
+    "id": "R2",
+    "waiting_days": 1500
+   },
+   {
+    "breakdown": {
+     "hla_match": {
+      "bucket": "candidate_biology",
+      "points": 52,
+      "weight": 15,
+      "weighted": 780
+     },
+     "longevity_epts": {
+      "bucket": "post_transplant_survival",
+      "points": 60,
+      "weight": 0,
+      "weighted": 0
+     },
+     "medical_urgency": {
+      "bucket": "medical_urgency",
+      "points": 0,
+      "weight": 0,
+      "weighted": 0
+     },
+     "pediatric": {
+      "bucket": "patient_access",
+      "points": 0,
+      "weight": 15,
+      "weighted": 0
+     },
+     "prior_living_donor": {
+      "bucket": "patient_access",
+      "points": 100,
+      "weight": 15,
+      "weighted": 1500
+     },
+     "proximity": {
+      "bucket": "placement_efficiency",
+      "points": 0,
+      "weight": 5,
+      "weighted": 0
+     },
+     "sensitization_cpra": {
+      "bucket": "candidate_biology",
+      "points": 90,
+      "weight": 20,
+      "weighted": 1800
+     },
+     "waiting_time": {
+      "bucket": "patient_access",
+      "points": 82,
+      "weight": 30,
+      "weighted": 2460
+     }
+    },
+    "cas": 6540,
+    "eligible": true,
+    "gates": {
+     "abo": true,
+     "sanity": true,
+     "virtual_crossmatch": true
+    },
+    "id": "R3",
+    "waiting_days": 3000
+   },
+   {
+    "eligible": false,
+    "gates": {
+     "abo": true,
+     "sanity": true,
+     "virtual_crossmatch": false
+    },
+    "id": "R4"
+   },
+   {
+    "eligible": false,
+    "gates": {
+     "abo": true,
+     "sanity": false,
+     "virtual_crossmatch": true
+    },
+    "id": "R5"
+   }
+  ],
+  "policyVersion": "kidney_v1",
+  "rankedRecipientCommitments": [
+   "0xf142e85f9280e36a8a20cbf646cb87c85f03658c439e8f5787954ccd1788c2a7",
+   "0xa22df272cbbfa82adb195a9876ac1c62c929d04041137ca2ef1a7dd73252a4a4",
+   "0xddb892d610db48f3f9e1badc150111998740b9a4051995c55dc8dac17f69eeee"
+  ],
+  "rankedRecipientIds": [
+   "R3",
+   "R1",
+   "R2"
+  ],
+  "rankingHash": "0x149251928052a5e1b9456144b996de7ffe2c8956ad83f9d6f1a693b424b8aded",
+  "tx": "0x143bd25c7f2beaf94627c7b4d0b3995f5cbdffb5903d272325b036fe42a98c1a"
+ },
+ "policy": {
+  "attributes": {
+   "hla_match": {
+    "bucket": "candidate_biology",
+    "rating": {
+     "floor_points": 0,
+     "input": "hla_mismatches",
+     "max_points": 100,
+     "per_mismatch": 16,
+     "type": "linear_descending"
+    },
+    "weight": 15
+   },
+   "longevity_epts": {
+    "bucket": "post_transplant_survival",
+    "rating": {
+     "floor_points": 0,
+     "input": "epts_score",
+     "max_points": 100,
+     "per_mismatch": 1,
+     "type": "linear_descending"
+    },
+    "weight": 0
+   },
+   "medical_urgency": {
+    "bucket": "medical_urgency",
+    "rating": {
+     "input": "urgent",
+     "points_if_false": 0,
+     "points_if_true": 100,
+     "type": "boolean_bonus"
+    },
+    "weight": 0
+   },
+   "pediatric": {
+    "bucket": "patient_access",
+    "rating": {
+     "input": "age_years",
+     "lt": 18,
+     "points_if_false": 0,
+     "points_if_true": 100,
+     "type": "threshold_bonus"
+    },
+    "weight": 15
+   },
+   "prior_living_donor": {
+    "bucket": "patient_access",
+    "rating": {
+     "input": "prior_living_donor",
+     "points_if_false": 0,
+     "points_if_true": 100,
+     "type": "boolean_bonus"
+    },
+    "weight": 15
+   },
+   "proximity": {
+    "bucket": "placement_efficiency",
+    "rating": {
+     "default": 0,
+     "input": "distance_band",
+     "map": {
+      "0": 100,
+      "1": 50,
+      "2": 0
+     },
+     "type": "map"
+    },
+    "weight": 5
+   },
+   "sensitization_cpra": {
+    "bucket": "candidate_biology",
+    "rating": {
+     "input": "cpra",
+     "steps": [
+      {
+       "at": 0,
+       "points": 0
+      },
+      {
+       "at": 20,
+       "points": 10
+      },
+      {
+       "at": 50,
+       "points": 25
+      },
+      {
+       "at": 80,
+       "points": 50
+      },
+      {
+       "at": 95,
+       "points": 75
+      },
+      {
+       "at": 98,
+       "points": 90
+      },
+      {
+       "at": 99,
+       "points": 95
+      },
+      {
+       "at": 100,
+       "points": 100
+      }
+     ],
+     "type": "step"
+    },
+    "weight": 20
+   },
+   "waiting_time": {
+    "bucket": "patient_access",
+    "rating": {
+     "den": 73,
+     "input": "waiting_days",
+     "max_points": 100,
+     "num": 2,
+     "type": "linear_clamped"
+    },
+    "weight": 30
+   }
+  },
+  "canonicalization": "canon-v1",
+  "gates": {
+   "abo": {
+    "A": [
+     "A",
+     "AB"
+    ],
+    "AB": [
+     "AB"
+    ],
+    "B": [
+     "B",
+     "AB"
+    ],
+    "O": [
+     "O",
+     "A",
+     "B",
+     "AB"
+    ]
+   },
+   "sanity": {
+    "max_age_years": 90,
+    "min_age_years": 0
+   },
+   "virtual_crossmatch": {
+    "enabled": true
+   }
+  },
+  "output": {
+   "explanation_granularity": "per_bucket",
+   "include_explanation": true
+  },
+  "region_zones": {
+   "AP": "S",
+   "AS": "NE",
+   "BR": "E",
+   "DL": "N",
+   "GJ": "W",
+   "KA": "S",
+   "KL": "S",
+   "MH": "W",
+   "MP": "C",
+   "OD": "E",
+   "PB": "N",
+   "RJ": "W",
+   "TN": "S",
+   "UP": "N",
+   "WB": "E"
+  },
+  "tie_break": [
+   {
+    "by": "waiting_days",
+    "direction": "desc"
+   },
+   {
+    "by": "keccak_seed",
+    "direction": "asc"
+   }
+  ],
+  "version": "kidney_v1"
+ },
+ "registrations": {
+  "erasures": [],
+  "registrations": [
+   {
+    "block": 2,
+    "commitment": "0xa22df272cbbfa82adb195a9876ac1c62c929d04041137ca2ef1a7dd73252a4a4",
+    "kind": 1
+   },
+   {
+    "block": 3,
+    "commitment": "0xddb892d610db48f3f9e1badc150111998740b9a4051995c55dc8dac17f69eeee",
+    "kind": 1
+   },
+   {
+    "block": 4,
+    "commitment": "0xf142e85f9280e36a8a20cbf646cb87c85f03658c439e8f5787954ccd1788c2a7",
+    "kind": 1
+   },
+   {
+    "block": 5,
+    "commitment": "0x04fae5498397c4e369f04775da4aa92db3d5491eb414e1f7f38daee5d8f4adaa",
+    "kind": 1
+   },
+   {
+    "block": 6,
+    "commitment": "0x8c3cdafbedc64dc5fdff20d473b2fcfba0b4ef168ee4f3bde3dc9ec929f87773",
+    "kind": 1
+   },
+   {
+    "block": 7,
+    "commitment": "0xf407a90e5000d44a2a45768103a2d04b1df7a4faa4f3cc83b58d21a206f7e1b1",
+    "kind": 2
+   }
+  ]
+ },
+ "reveal": {
+  "policyVersion": "kidney_v1",
+  "revealed": {
+   "D1": {
+    "commitment": "0xf407a90e5000d44a2a45768103a2d04b1df7a4faa4f3cc83b58d21a206f7e1b1",
+    "kind": "donor",
+    "record": {
+     "abo": "O",
+     "age": 35,
+     "hla": {
+      "A": [
+       1,
+       2
+      ],
+      "B": [
+       7,
+       8
+      ],
+      "DR": [
+       4,
+       15
+      ]
+     },
+     "id": "D1",
+     "recovered_at_epoch_day": 20000,
+     "region": "TN"
+    },
+    "salt": "562ba9ba06bdb29632e2a69193caab84"
+   },
+   "R1": {
+    "commitment": "0xa22df272cbbfa82adb195a9876ac1c62c929d04041137ca2ef1a7dd73252a4a4",
+    "kind": "recipient",
+    "record": {
+     "abo": "O",
+     "age": 50,
+     "cpra": 10,
+     "dialysis_start_epoch_day": 13000,
+     "hla": {
+      "A": [
+       1,
+       2
+      ],
+      "B": [
+       7,
+       8
+      ],
+      "DR": [
+       4,
+       15
+      ]
+     },
+     "id": "R1",
+     "prior_living_donor": false,
+     "region": "TN",
+     "unacceptable_antigens": [],
+     "urgent": false
+    },
+    "salt": "736c973d8423a6508c76fa23bf25718d"
+   },
+   "R2": {
+    "commitment": "0xddb892d610db48f3f9e1badc150111998740b9a4051995c55dc8dac17f69eeee",
+    "kind": "recipient",
+    "record": {
+     "abo": "A",
+     "age": 12,
+     "cpra": 0,
+     "dialysis_start_epoch_day": 18500,
+     "hla": {
+      "A": [
+       1,
+       3
+      ],
+      "B": [
+       7,
+       9
+      ],
+      "DR": [
+       4,
+       11
+      ]
+     },
+     "id": "R2",
+     "prior_living_donor": false,
+     "region": "KA",
+     "unacceptable_antigens": [],
+     "urgent": false
+    },
+    "salt": "281b99ccc5f3c0ff48ab766b8ccbc521"
+   },
+   "R3": {
+    "commitment": "0xf142e85f9280e36a8a20cbf646cb87c85f03658c439e8f5787954ccd1788c2a7",
+    "kind": "recipient",
+    "record": {
+     "abo": "B",
+     "age": 40,
+     "cpra": 98,
+     "dialysis_start_epoch_day": 17000,
+     "hla": {
+      "A": [
+       2,
+       5
+      ],
+      "B": [
+       8,
+       12
+      ],
+      "DR": [
+       15,
+       7
+      ]
+     },
+     "id": "R3",
+     "prior_living_donor": true,
+     "region": "MH",
+     "unacceptable_antigens": [],
+     "urgent": false
+    },
+    "salt": "fc0ab4a292f7503874636aa7d4aeb6cc"
+   },
+   "R4": {
+    "commitment": "0x04fae5498397c4e369f04775da4aa92db3d5491eb414e1f7f38daee5d8f4adaa",
+    "kind": "recipient",
+    "record": {
+     "abo": "O",
+     "age": 45,
+     "cpra": 50,
+     "dialysis_start_epoch_day": 15000,
+     "hla": {
+      "A": [
+       1,
+       2
+      ],
+      "B": [
+       7,
+       8
+      ],
+      "DR": [
+       4,
+       15
+      ]
+     },
+     "id": "R4",
+     "prior_living_donor": false,
+     "region": "DL",
+     "unacceptable_antigens": [
+      7
+     ],
+     "urgent": false
+    },
+    "salt": "41f4f4fdbd2255763a3ca19dfbcd796b"
+   },
+   "R5": {
+    "commitment": "0x8c3cdafbedc64dc5fdff20d473b2fcfba0b4ef168ee4f3bde3dc9ec929f87773",
+    "kind": "recipient",
+    "record": {
+     "abo": "O",
+     "age": 95,
+     "cpra": 0,
+     "dialysis_start_epoch_day": 14000,
+     "hla": {
+      "A": [
+       1,
+       2
+      ],
+      "B": [
+       7,
+       8
+      ],
+      "DR": [
+       4,
+       15
+      ]
+     },
+     "id": "R5",
+     "prior_living_donor": false,
+     "region": "AP",
+     "unacceptable_antigens": [],
+     "urgent": false
+    },
+    "salt": "189d829b788485b08d176687f1b50933"
+   }
+  }
+ }
+}

@@ -1,5 +1,10 @@
 # Verifiable Organ Allocation — deceased-donor kidney matching
 
+[![ci](https://github.com/100-mitra/Organ-Donation/actions/workflows/ci-pages.yml/badge.svg)](https://github.com/100-mitra/Organ-Donation/actions/workflows/ci-pages.yml)
+**[Live demo](https://100-mitra.github.io/Organ-Donation/)** — a static snapshot of one real
+allocation (synthetic data); Verify and the tamper demo run for real in your browser. The deploy is
+gated on all three test suites (`.github/workflows/ci-pages.yml`).
+
 > A *verifiable-allocation* prototype for deceased-donor kidney matching. An off-chain engine ranks
 > candidates by a transparent, deterministic policy (a Composite Allocation Score modeled on OPTN
 > continuous distribution); a permissioned smart contract logs every decision immutably; and an

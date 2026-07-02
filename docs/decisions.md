@@ -6,6 +6,31 @@
 
 ---
 
+## D-026 · 2026-06-28 · accepted — Phase 7 demo deploy: pre-captured real decision, static Pages build
+**Context.** Phase 7 wants a free public demo, but the Verify flow needs a chain + API, and the $0 rule
+(CLAUDE.md §4) forbids hosting a backend; faking a live system would break the project's honesty
+discipline. **Decisions.** (1) **The demo is a static GitHub Pages build carrying one REAL allocation
+as a bundled snapshot**: `scripts/capture_demo_bundle.py` drives the actual local stack (seed → match)
+and serializes the verbatim endpoint payloads (`/audit`, `/reveal`, `/commitments`, `/registrations`,
+`/policy`, `/match`) into `web/src/demo/bundle.json` — and **refuses to write** unless the Python
+lockstep verifier PASSES the bundle and FAILS a tampered variant — so an inconsistent or silently
+edited fixture cannot ship. (Precisely: the checks prove *policy-consistency* — the bundle is exactly
+what the published policy produces for its inputs — not *provenance*; the fixture is real system output
+because the script only ever serializes live endpoint responses, which is a property of the capture
+process, not something the checks can prove. Same boundary as §2.) (2) **Demo mode swaps only the data source**: `makeDemoApi()` serves the
+bundle through the same interface as `makeApi()`; `verify.js`/`cas.js` are byte-for-byte unchanged, so
+Verify (PASS) and the tamper demo (FAIL) run genuinely client-side. The Allocate view becomes read-only
+(the captured decision + explanations) — no fake live matching. (3) **Honest labeling**: the page states
+it is a demo on synthetic data with a pre-captured decision and that a live deployment would read the
+chain; links to the repo + `ANALYSIS.md`. (4) **Deploy is test-gated**: one workflow runs all three
+suites (pytest, Hardhat, vitest — including `demo.test.js`, which proves the bundled snapshot verifies
+and the tamper edit fails) and only a green run on `main` (push or manual dispatch) builds
+(`VITE_DEMO=1`, `VITE_BASE=/Organ-Donation/`) and publishes to Pages; `actions/configure-pages`
+enables the Pages site on first deploy. Free tier only. **Consequence.** A stranger can
+open the Pages URL, see a real allocation with per-candidate explanations, run Verify → PASS and the
+tamper demo → FAIL entirely in-browser; the published demo can never outrun its tests. The reveal-data
+disclosure this implies is acceptable because the data is synthetic ([[d-022]] gates the real thing).
+
 ## D-025 · 2026-06-28 · accepted — Phase 6 capstone = kidney paired exchange (KPD), not ZK
 **Context.** Phase 6 is an *optional* single capstone — "pick exactly one" of (A) ZK
 verify-without-revealing or (B) kidney paired exchange, never both, with the choice deferred to the
