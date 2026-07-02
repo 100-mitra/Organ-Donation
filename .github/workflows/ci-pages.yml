@@ -55,6 +55,11 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      # Creates/enables the Pages site (source: GitHub Actions) if it doesn't
+      # exist yet — deploy-pages does NOT, and would fail on the first run.
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - uses: actions/setup-node@v4
         with:
           node-version: 22

@@ -5,9 +5,11 @@ serializes the exact payloads the browser Verify flow fetches — /audit, /revea
 /commitments, /registrations, /policy — plus the /match response (for the
 read-only Allocate view) into web/src/demo/bundle.json.
 
-The bundle is genuine system output, not hand-authored: before writing, this
-script re-verifies it with engine.verifier (the Python lockstep verifier) and
-requires the positive check to PASS and a tampered variant to FAIL.
+Before writing, this script re-verifies the bundle with engine.verifier (the
+Python lockstep verifier) and requires the positive check to PASS and a
+tampered variant to FAIL — an inconsistent or edited fixture cannot ship.
+(The checks prove policy-consistency, not provenance; the bundle is real
+system output because this script only serializes live endpoint responses.)
 
 Preconditions: Hardhat node running, AuditLedger deployed, API at API_URL.
 Exit 0 = bundle captured + self-verified; exit 1 = capture refused.
